@@ -1,0 +1,10 @@
+language: rust
+
+rust:
+- nightly
+- beta
+- 1.13.0
+
+script:
+- cargo test
+- cargo doc --no-deps
