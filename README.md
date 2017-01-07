@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/rushmorem/psl.svg?branch=master)](https://travis-ci.org/rushmorem/psl) [![Latest Version](https://img.shields.io/crates/v/psl.svg)](https://crates.io/crates/psl) [![Docs](https://docs.rs/psl/badge.svg)](https://docs.rs/psl)
 
-The `publicsuffix` crate is a low level crate that allows you to optionally use Mozilla's Public Suffix List to parse domain names and email addresses. It provides methods for fetching the list but it doesn't try to handle caching for you. If you use the list in long running applications, you need a way to keep the list updated. This is where this crate comes in. It downloads the list at a specific interval (every week by default).
+The [publicsuffix](https://github.com/rushmorem/publicsuffix) crate is a low level crate that allows you to optionally use Mozilla's Public Suffix List to parse domain names and email addresses. It provides methods for fetching the list but it doesn't try to handle caching for you. If you use the list in long running applications, you need a way to keep the list updated. This is where this crate comes in. It downloads the list at a specific interval (every week by default).
 
 This initial version only keeps a cache in memory. If you restart your application, your current cache will be lost so the list will be downloaded again.
 
