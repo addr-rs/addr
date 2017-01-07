@@ -1,7 +1,7 @@
 [package]
 name = "psl"
 description = "Cache manager for the publicsuffix crate"
-version = "0.0.0"
+version = "0.0.1"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/rushmorem/psl"
 documentation = "https://docs.rs/psl"
@@ -12,3 +12,10 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 [dependencies]
 publicsuffix = "1.3"
 lazy_static = "0.2"
+parking_lot = "0.3"
+slog = "1.2"
+slog-scope = "0.2"
+
+[dev-dependencies]
+rspec = "1.0.0-beta.3"
+slog-term = "1.3"
