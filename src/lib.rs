@@ -8,34 +8,135 @@ extern crate parking_lot;
 extern crate slog;
 #[macro_use]
 extern crate slog_scope;
+extern crate app_dirs;
 
 #[cfg(test)]
 mod tests;
 
 use std::thread;
+use std::io::Write;
+use std::path::PathBuf;
 use std::time::Duration;
+use std::fs::{self, File};
 
 use publicsuffix::errors::*;
 use publicsuffix::{List, IntoUrl};
 use parking_lot::{RwLock, RwLockReadGuard};
 use slog::Logger;
 use slog_scope::set_global_logger;
+use app_dirs::{AppDataType, AppInfo, app_root};
 
 lazy_static! {
     static ref LIST: RwLock<List> = RwLock::new(List::empty());
 }
+
+const APP_INFO: AppInfo = AppInfo {
+    name: "publicsuffix",
+    author: "mozilla",
+};
 
 /// The lock guard for the list
 ///
 /// It derefences into an instance of `publicsuffix::List`.
 pub type ListGuard<'a> = RwLockReadGuard<'a, List>;
 
-fn update_list(url: &str) -> Result<()> {
-    info!("updating the public suffix list from {}", url);
-    let mut list = LIST.write();
-    *list = List::from_url(url)?;
-    info!("the list has been updated successfully");
-    Ok(())
+#[derive(Debug, Clone)]
+struct Cache {
+    url: String,
+    freq: Duration,
+}
+
+impl Cache {
+    fn new(url: String, freq: Duration) -> Cache {
+        Cache {
+            url: url,
+            freq: freq,
+        }
+    }
+
+    fn path(&self) -> Result<PathBuf> {
+        app_root(AppDataType::UserCache, &APP_INFO)
+            .chain_err(|| "error accessing the data directory")
+            .and_then(|mut file| {
+                file.push("list.dat");
+                Ok(file)
+            })
+    }
+
+    fn update(&self) -> Result<()> {
+        let mut list = LIST.write();
+        *list = self.list()?;
+        info!("the list has been updated successfully");
+        Ok(())
+    }
+
+    fn list(&self) -> Result<List> {
+        match self.path() {
+            Ok(path) => {
+                if path.is_file() {
+                    let last_update = path.metadata()?.modified()?;
+                    let elapsed = last_update.elapsed()
+                        .chain_err(|| "failed to get elapsed time")?;
+                    if elapsed > self.freq {
+                        self.download_and_save()
+                            .or_else(|error| {
+                                info!("failed to download file: {}", error);
+                                info!("updating the public suffix list from {}", path.to_str().unwrap());
+                                List::from_path(path)
+                            })
+                    } else {
+                        info!("updating the public suffix list from {}", path.to_str().unwrap());
+                        List::from_path(path)
+                            .or_else(|error| {
+                                info!("failed to retrieve the list from local cache: {}", error);
+                                info!("updating the public suffix list from {}", self.url);
+                                self.download_and_save()
+                            })
+                    }
+                } else {
+                    self.download_and_save()
+                }
+            }
+            Err(error) => {
+                warn!("failed querying cache path: {}", error);
+                self.download_and_save()
+            }
+        }
+    }
+
+    fn download_and_save(&self) -> Result<List> {
+        info!("updating the public suffix list from {}", self.url);
+        let list = List::from_url(&self.url)?;
+        if let Err(error) = self.save(&list) {
+            warn!("failed to save the list to disk: {}", error);
+        }
+        Ok(list)
+    }
+
+    fn save(&self, list: &List) -> Result<()> {
+        let file = self.path()?;
+        if list.all().is_empty() {
+            fs::remove_file(file)?;
+            return Ok(());
+        }
+        let mut data = String::with_capacity(list.all().len());
+        if !list.icann().is_empty() {
+            data.push_str("// ===BEGIN ICANN DOMAINS===\n");
+            for rule in list.icann() {
+                data.push_str(&format!("{}\n", rule));
+            }
+        }
+        if !list.private().is_empty() {
+            data.push_str("// ===BEGIN PRIVATE DOMAINS===\n");
+            for rule in list.private() {
+                data.push_str(&format!("{}\n", rule));
+            }
+        }
+        let mut file = File::create(file)?;
+        file.write_all(data.as_bytes())?;
+        file.sync_all()?;
+        Ok(())
+    }
 }
 
 /// Initialise the list
@@ -72,14 +173,15 @@ pub fn init<U, D>(url: U, every: D) -> Result<()>
           D: Into<Option<Duration>>
 {
     let url = url.into_url()?.into_string();
-    update_list(&url)?;
     // default to updating the list every week
     let freq = every.into().unwrap_or(Duration::from_secs(60 * 60 * 24 * 7));
+    let cache = Cache::new(url, freq);
+    cache.update()?;
     thread::spawn(move || {
         loop {
-            thread::sleep(freq);
+            thread::sleep(cache.freq);
             loop {
-                match update_list(&url) {
+                match cache.update() {
                     Ok(_) => break,
                     Err(error) => {
                         warn!("failed to update the list: {}", error);
