@@ -6,8 +6,6 @@ extern crate lazy_static;
 extern crate parking_lot;
 #[macro_use]
 extern crate slog;
-#[macro_use]
-extern crate slog_scope;
 extern crate app_dirs;
 
 #[cfg(test)]
@@ -23,7 +21,6 @@ use publicsuffix::errors::*;
 use publicsuffix::{List, IntoUrl};
 use parking_lot::{RwLock, RwLockReadGuard};
 use slog::Logger;
-use slog_scope::set_global_logger;
 use app_dirs::{AppDataType, AppInfo, app_root};
 
 lazy_static! {
@@ -44,13 +41,15 @@ pub type ListGuard<'a> = RwLockReadGuard<'a, List>;
 struct Cache {
     url: String,
     freq: Duration,
+    logger : Logger,
 }
 
 impl Cache {
-    fn new(url: String, freq: Duration) -> Cache {
+    fn new(url: String, freq: Duration, logger : Logger) -> Cache {
         Cache {
             url: url,
             freq: freq,
+            logger: logger,
         }
     }
 
@@ -66,7 +65,7 @@ impl Cache {
     fn update(&self) -> Result<()> {
         let mut list = LIST.write();
         *list = self.list()?;
-        info!("the list has been updated successfully");
+        info!(self.logger, "the list has been updated successfully");
         Ok(())
     }
 
@@ -80,16 +79,16 @@ impl Cache {
                     if elapsed > self.freq {
                         self.download_and_save()
                             .or_else(|error| {
-                                info!("failed to download file: {}", error);
-                                info!("updating the public suffix list from {}", path.to_str().unwrap());
+                                info!(self.logger, "failed to download file: {}", error);
+                                info!(self.logger, "updating the public suffix list from {}", path.to_str().unwrap());
                                 List::from_path(path)
                             })
                     } else {
-                        info!("updating the public suffix list from {}", path.to_str().unwrap());
+                        info!(self.logger, "updating the public suffix list from {}", path.to_str().unwrap());
                         List::from_path(path)
                             .or_else(|error| {
-                                info!("failed to retrieve the list from local cache: {}", error);
-                                info!("updating the public suffix list from {}", self.url);
+                                info!(self.logger, "failed to retrieve the list from local cache: {}", error);
+                                info!(self.logger, "updating the public suffix list from {}", self.url);
                                 self.download_and_save()
                             })
                     }
@@ -98,17 +97,17 @@ impl Cache {
                 }
             }
             Err(error) => {
-                warn!("failed querying cache path: {}", error);
+                warn!(self.logger, "failed querying cache path: {}", error);
                 self.download_and_save()
             }
         }
     }
 
     fn download_and_save(&self) -> Result<List> {
-        info!("updating the public suffix list from {}", self.url);
+        info!(self.logger, "updating the public suffix list from {}", self.url);
         let list = List::from_url(&self.url)?;
         if let Err(error) = self.save(&list) {
-            warn!("failed to save the list to disk: {}", error);
+            warn!(self.logger, "failed to save the list to disk: {}", error);
         }
         Ok(list)
     }
@@ -155,10 +154,10 @@ impl Cache {
 ///
 /// fn main() {
 ///     // Update the list every week
-///     psl::init(LIST_URL, None).unwrap();
+///     psl::init(LIST_URL, None, None).unwrap();
 ///
 ///     // Or update every 2 weeks
-///     psl::init(LIST_URL, Duration::from_secs(60 * 60 * 24 * 7 * 2)).unwrap();
+///     psl::init(LIST_URL, Duration::from_secs(60 * 60 * 24 * 7 * 2), None).unwrap();
 /// }
 /// ```
 ///
@@ -166,16 +165,19 @@ impl Cache {
 /// After it successfully fetches the list for the first time it will try to download
 /// an update at `every` interval retrying every 5 minutes if it fails.
 ///
-/// If you are using this in a long running server, I highly recommend you set up a logger
-/// using `set_logger` so you will know if updates start failing at some point in future.
-pub fn init<U, D>(url: U, every: D) -> Result<()>
+/// If you are using this in a long running server, I highly recommend you set up a `logger`
+/// so you will know if updates start failing at some point in future.
+pub fn init<U, D, L>(url: U, every: D, logger : L) -> Result<()>
     where U: IntoUrl,
-          D: Into<Option<Duration>>
+          D: Into<Option<Duration>>,
+          L: Into<Option<Logger>>
 {
+    let logger = logger.into().unwrap_or(slog::Logger::root(slog::Discard, o!()));
+
     let url = url.into_url()?.into_string();
     // default to updating the list every week
     let freq = every.into().unwrap_or(Duration::from_secs(60 * 60 * 24 * 7));
-    let cache = Cache::new(url, freq);
+    let cache = Cache::new(url, freq, logger.clone());
     cache.update()?;
     thread::spawn(move || {
         loop {
@@ -184,8 +186,8 @@ pub fn init<U, D>(url: U, every: D) -> Result<()>
                 match cache.update() {
                     Ok(_) => break,
                     Err(error) => {
-                        warn!("failed to update the list: {}", error);
-                        info!("will try again in 5 minutes");
+                        warn!(logger, "failed to update the list: {}", error);
+                        info!(logger, "will try again in 5 minutes");
                         thread::sleep(Duration::from_secs(300));
                     }
                 }
@@ -213,10 +215,4 @@ pub fn init<U, D>(url: U, every: D) -> Result<()>
 /// ```
 pub fn get<'a>() -> ListGuard<'a> {
     LIST.read()
-}
-
-/// Setup an `slog` logger
-pub fn set_logger(l: &Logger)
-{
-    set_global_logger(l.clone());
 }
