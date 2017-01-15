@@ -4,7 +4,7 @@ extern crate slog_term;
 use std::thread;
 use std::time::Duration;
 
-use {init, get, set_logger};
+use {init, get};
 use publicsuffix::LIST_URL;
 use slog::{Logger, DrainExt};
 use self::rspec::context::rdescribe;
@@ -23,7 +23,8 @@ fn cache_behaviour() {
     });
 
     rdescribe("initialised cache", |ctx| {
-        init(LIST_URL, Duration::from_secs(20)).unwrap();
+        let log = Logger::root(slog_term::streamer().build().fuse(), o!("test" => "updating"));
+        init(LIST_URL, Duration::from_secs(20), log).unwrap();
 
         ctx.it("should have ICANN domains", || {
             assert!(!get().icann().is_empty());
@@ -36,8 +37,6 @@ fn cache_behaviour() {
         });
 
         ctx.it("should download a new list at the given interval", || {
-            let log = Logger::root(slog_term::streamer().build().fuse(), o!("test" => "updating"));
-            set_logger(&log);
             thread::sleep(Duration::from_secs(30));
             assert!(!get().all().is_empty());
             pass!()
