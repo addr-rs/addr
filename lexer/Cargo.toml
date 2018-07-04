@@ -1,0 +1,25 @@
+[package]
+name = "psl-lexer"
+description = "A lexer for Mozilla's Public Suffix List"
+version = "0.1.0"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/rushmorem/publicsuffix"
+documentation = "https://docs.rs/publicsuffix"
+readme = "README.md"
+keywords = ["tld", "gtld", "cctld", "domain", "psl"]
+authors = ["rushmorem <rushmore@webenchanter.com>"]
+
+[features]
+default = ["remote_list"]
+remote_list = ["native-tls"]
+
+[dependencies]
+error-chain = "0.12"
+url = "1.7"
+
+[dependencies.native-tls]
+version = "0.2"
+optional = true
+
+[dev_dependencies]
+rspec = "=1.0.0-beta.3"
