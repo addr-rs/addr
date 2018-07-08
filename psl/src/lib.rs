@@ -2,25 +2,37 @@
 
 use core::str;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Type {
     Icann,
     Private,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+impl Default for Type {
+    fn default() -> Self {
+        Type::Icann
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Info {
     Suffix(usize, Type),
     Incomplete,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl Default for Info {
+    fn default() -> Self {
+        Info::Incomplete
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct Suffix<'a> {
     str: &'a str,
     typ: Option<Type>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct Domain<'a> {
     str: &'a str,
     suf: Suffix<'a>,
