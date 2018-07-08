@@ -1,3 +1,5 @@
+#![recursion_limit="128"]
+
 extern crate proc_macro;
 extern crate proc_macro2;
 extern crate psl_lexer;
@@ -30,12 +32,15 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         extern crate psl as __psl;
         impl #impl_generics __psl::Psl for #name #ty_generics #where_clause {
             #[allow(unused_assignments)]
-            fn find_unchecked<'a>(&self, mut labels: impl Iterator<Item=&'a str>) -> Option<__psl::Info> {
+            fn find_unchecked<'a, T>(&self, labels: T) -> Option<__psl::Info>
+                where T: IntoIterator<Item=&'a str>
+            {
                 use __psl::Type::*;
 
                 let mut suffix = __psl::Info::Incomplete;
                 let mut index = 1;
 
+                let mut labels = labels.into_iter();
                 #body
             }
         }

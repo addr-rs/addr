@@ -37,7 +37,8 @@ pub trait Psl {
     /// `&["example", "com"].
     /// - The labels are in lowercase.
     /// - The labels are in unicode, rather than punnycode.
-    fn find_unchecked<'a>(&self, labels: impl Iterator<Item=&'a str>) -> Option<Info>;
+    fn find_unchecked<'a, T>(&self, labels: T) -> Option<Info>
+        where T: IntoIterator<Item = &'a str>;
 
     /// Get the public suffix of the domain
     /// 
