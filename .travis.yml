@@ -6,4 +6,4 @@ rust:
 - stable
 
 script:
-- travis_wait cargo test
+- travis_wait 30 cargo test
