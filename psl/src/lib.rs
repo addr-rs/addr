@@ -8,22 +8,10 @@ pub enum Type {
     Private,
 }
 
-impl Default for Type {
-    fn default() -> Self {
-        Type::Icann
-    }
-}
-
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Info {
     Suffix(usize, Type),
     Incomplete,
-}
-
-impl Default for Info {
-    fn default() -> Self {
-        Info::Incomplete
-    }
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
@@ -125,5 +113,17 @@ impl<'a> Domain<'a> {
 
     pub fn suffix(&self) -> Suffix<'a> {
         Suffix { ..self.suf }
+    }
+}
+
+impl Default for Type {
+    fn default() -> Self {
+        Type::Icann
+    }
+}
+
+impl Default for Info {
+    fn default() -> Self {
+        Info::Incomplete
     }
 }

@@ -5,6 +5,10 @@ extern crate syn;
 #[macro_use]
 extern crate quote;
 extern crate sequence_trie;
+extern crate idna;
+
+use std::env;
+use idna::domain_to_unicode;
 
 use psl_lexer::{List, Type};
 use proc_macro2::TokenStream;
@@ -25,6 +29,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let expanded = quote! {
         extern crate psl as __psl;
         impl #impl_generics __psl::Psl for #name #ty_generics #where_clause {
+            #[allow(unused_assignments)]
             fn find_unchecked<'a>(&self, mut labels: impl Iterator<Item=&'a str>) -> Option<__psl::Info> {
                 use __psl::Type::*;
 
@@ -46,7 +51,7 @@ fn body(attrs: &[Attribute]) -> TokenStream {
 
     let resources = uri(attrs);
 
-    let list = if resources.is_empty() {
+    let mut list = if resources.is_empty() {
         List::fetch()
             .unwrap_or_else(|error| panic!("failed to download the list: {}", error))
     } else {
@@ -74,6 +79,24 @@ fn body(attrs: &[Attribute]) -> TokenStream {
 
         list.expect("could not get the list from any of the supplied resource(s)")
     };
+
+    let mut tlds = Vec::new();
+    for key in &["PSL_TLD", "PSL_TLDS"] {
+        if let Ok(val) = env::var(key) {
+            for input in val.split(',').map(|x| x.trim().to_lowercase()).filter(|x| !x.is_empty()) {
+                let (tld, res) = domain_to_unicode(&input);
+                if res.is_err() {
+                    panic!("failed to parse `{}` as valid unicode domain", input);
+                }
+                let val = list.rules.remove(&tld)
+                    .unwrap_or_else(|| panic!("`{}` not found in the list", input));
+                tlds.push((tld, val));
+            }
+        }
+    }
+    if !tlds.is_empty() {
+        list.rules = tlds.into_iter().collect();
+    }
 
     let mut tree = SequenceTrie::new();
     for val in list.rules.values() {
@@ -189,6 +212,22 @@ fn uri(attrs: &[Attribute]) -> Vec<Uri> {
     use self::Meta::*;
 
     let mut resources = Vec::new();
+
+    for key in &["PSL_PATH", "PSL_PATHS", "PSL_URL", "PSL_URLS"] {
+        if let Ok(val) = env::var(key) {
+            for resource in val.split(',').map(|x| x.trim()).filter(|x| !x.is_empty()) {
+                if key.contains("URL") {
+                    resources.push(Uri::Url(resource.to_owned()));
+                } else {
+                    resources.push(Uri::Path(resource.to_owned()));
+                }
+            }
+        }
+    }
+
+    if !resources.is_empty() {
+        return resources;
+    }
 
     for attr in attrs {
         if let Some(List(ml)) = attr.interpret_meta() {
