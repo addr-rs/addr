@@ -6,5 +6,4 @@ rust:
 - stable
 
 script:
-- cargo test
-- cargo doc --no-deps
+- travis_wait cargo test
