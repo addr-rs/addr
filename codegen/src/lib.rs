@@ -117,6 +117,13 @@ fn body(attrs: &[Attribute]) -> TokenStream {
 
 fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtRoot) -> TokenStream {
     if list.is_empty() {
+        if at_root {
+            panic!("
+                Found empty list. This implementation doesn't support empty lists.
+                If you do want one, you can easily implement the trait `psl::Psl`
+                by merely putting `None` in the body.
+            ");
+        }
         return TokenStream::new();
     }
 
