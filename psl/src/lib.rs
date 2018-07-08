@@ -14,13 +14,13 @@ pub enum Info {
     Incomplete,
 }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Suffix<'a> {
     str: &'a str,
     typ: Option<Type>,
 }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Domain<'a> {
     str: &'a str,
     suf: Suffix<'a>,
