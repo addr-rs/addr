@@ -1,5 +1,5 @@
 [workspace]
-members = ["psl", "compiled", "codegen", "lexer"]
+members = ["psl", "codegen", "lexer"]
 
 [package]
 name = "psl-suite"
@@ -9,7 +9,6 @@ publish = false
 
 [dev-dependencies]
 psl = { path = "./psl" }
-psl-compiled = { path = "./compiled" }
 psl-codegen = { path = "./codegen" }
 psl-lexer = { path = "./lexer" }
 rspec = "1.0.0-beta.3"

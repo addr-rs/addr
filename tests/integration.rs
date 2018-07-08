@@ -1,11 +1,9 @@
 extern crate psl;
-extern crate psl_compiled;
 extern crate psl_lexer;
 extern crate rspec;
 extern crate idna;
 
-use psl::Psl;
-use psl_compiled::List;
+use psl::{Psl, List};
 use psl_lexer::request;
 use self::rspec::context::rdescribe;
 

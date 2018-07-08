@@ -1,10 +1,8 @@
 extern crate psl;
-extern crate psl_compiled;
 #[macro_use]
 extern crate criterion;
 
-use psl::Psl;
-use psl_compiled::List;
+use psl::{Psl, List};
 use criterion::Criterion;
 
 fn criterion_benchmark(c: &mut Criterion) {

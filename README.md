@@ -11,17 +11,14 @@ Add this crate to your `Cargo.toml`:
 ```toml
 [dependencies]
 psl = "0.1"
-psl-compiled = "0.1"
 ```
 
 ## Examples
 
 ```rust
 extern crate psl;
-extern crate psl_compiled;
 
-use psl::Psl;
-use psl_compiled::List;
+use psl::{Psl, List};
 
 let list = List::new();
 

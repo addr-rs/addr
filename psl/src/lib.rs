@@ -1,6 +1,19 @@
 #![no_std]
+#![cfg_attr(feature = "dynamic", crate_type = "dylib")]
+
+#[cfg(feature = "list")]
+extern crate serde;
+#[cfg(feature = "list")]
+#[macro_use]
+extern crate psl_codegen;
+
+#[cfg(feature = "list")]
+mod list;
 
 use core::{str, fmt};
+
+#[cfg(feature = "list")]
+pub use list::List;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Type {

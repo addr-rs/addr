@@ -6,6 +6,13 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 [lib]
 proc-macro = true
 
+[features]
+default = ["prefix"]
+
+# Whether or not to prefix the generated types
+# from the `psl` crate with the name of the crate
+prefix = []
+
 [dependencies]
 proc-macro2 = "0.4"
 quote = "0.6"

@@ -2,3 +2,19 @@
 name = "psl"
 version = "0.1.0"
 authors = ["rushmorem <rushmore@webenchanter.com>"]
+
+[features]
+default = ["list"]
+list = ["psl-codegen", "serde"]
+dynamic = [ ]
+
+[dependencies.serde]
+version = "1.0"
+default-features = false
+optional = true
+
+[dependencies.psl-codegen]
+version = "0.1"
+default-features = false
+path = "../codegen"
+optional = true
