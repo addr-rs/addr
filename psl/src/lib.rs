@@ -1,6 +1,6 @@
 #![no_std]
 
-use core::str;
+use core::{str, fmt};
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Type {
@@ -107,6 +107,12 @@ impl<'a> Suffix<'a> {
     }
 }
 
+impl<'a> fmt::Display for Suffix<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.str)
+    }
+}
+
 impl<'a> Domain<'a> {
     pub fn as_str(&self) -> &str {
         &self.str
@@ -114,6 +120,12 @@ impl<'a> Domain<'a> {
 
     pub fn suffix(&self) -> Suffix<'a> {
         Suffix { ..self.suf }
+    }
+}
+
+impl<'a> fmt::Display for Domain<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.str)
     }
 }
 
