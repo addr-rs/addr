@@ -6,4 +6,5 @@ rust:
 - stable
 
 script:
-- travis_wait 30 cargo test
+#- travis_wait 30 cargo test
+- cargo test -p psl-codegen
