@@ -26,7 +26,7 @@ path = "../codegen"
 optional = true
 
 [dev-dependencies]
-psl-lexer = { path = "../lexer" }
+psl-lexer = { version = "0.1", path = "../lexer" }
 rspec = "1.0.0-beta.3"
 idna = "0.1"
 criterion = "0.2"
