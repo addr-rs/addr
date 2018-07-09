@@ -1,20 +1,2 @@
 [workspace]
 members = ["psl", "codegen", "lexer"]
-
-[package]
-name = "psl-suite"
-version = "0.0.0"
-authors = ["rushmorem <rushmore@webenchanter.com>"]
-publish = false
-
-[dev-dependencies]
-psl = { path = "./psl" }
-psl-codegen = { path = "./codegen" }
-psl-lexer = { path = "./lexer" }
-rspec = "1.0.0-beta.3"
-criterion = "0.2"
-idna = "0.1"
-
-[[bench]]
-name = "list_benchmark"
-harness = false

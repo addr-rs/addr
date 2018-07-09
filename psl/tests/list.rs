@@ -48,13 +48,17 @@ fn list_behaviour() {
                     };
                     let is_punycode = input.contains("xn--");
                     let domain = if is_punycode { idna::domain_to_unicode(input).0 } else { input.to_owned() };
-                    let (mut found_root, mut found_suffix) = list.registrable_domain(&domain.to_lowercase())
+                    let (mut found_root, mut found_suffix) = if domain.starts_with(".") || domain.contains("..") {
+                        (None, None)
+                    } else {
+                        list.registrable_domain(&domain.to_lowercase())
                         .map(|d| {
                             let domain = d.as_str().to_owned();
                             let suffix = d.suffix().as_str().to_owned();
                             (Some(domain), Some(suffix))
                         })
-                        .unwrap_or((None, None));
+                        .unwrap_or((None, None))
+                    };
                     if is_punycode {
                         found_root = found_root.map(|p| idna::domain_to_ascii(&p).unwrap());
                         found_suffix = found_suffix.map(|p| idna::domain_to_ascii(&p).unwrap());
