@@ -47,10 +47,10 @@ pub trait Psl {
     ///
     /// - The input is an `Iterator` of domain labels.
     /// - The labels are in reverse order. That is, `&["com", "example"]` instead of
-    /// `&["example", "com"].
+    /// `&["example", "com"]`.
     /// - The labels are in lowercase.
     /// - The labels are in unicode, rather than punnycode.
-    fn find_unchecked<'a, T>(&self, labels: T) -> Option<Info>
+    fn find<'a, T>(&self, labels: T) -> Option<Info>
         where T: IntoIterator<Item = &'a str>;
 
     /// Get the public suffix of the domain

@@ -43,7 +43,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let expanded = quote! {
         impl #impl_generics #krate Psl for #name #ty_generics #where_clause {
             #[allow(unused_assignments)]
-            fn find_unchecked<'a, T>(&self, labels: T) -> Option<#krate Info>
+            fn find<'a, T>(&self, labels: T) -> Option<#krate Info>
                 where T: IntoIterator<Item=&'a str>
             {
                 let mut suffix = #krate Info::Incomplete;
