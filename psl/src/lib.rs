@@ -61,9 +61,6 @@ pub trait Psl {
     /// 
     /// *NB:* `domain` must be in lowercase and in unicode
     fn public_suffix<'a>(&self, domain: &'a str) -> Option<Suffix<'a>> {
-        if domain.starts_with('.') || domain.contains("..") {
-            return None;
-        }
         let mut labels = domain
             .trim_right_matches('.')
             .split('.')

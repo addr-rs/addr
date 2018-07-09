@@ -146,7 +146,7 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
     for (label, tree) in list {
         let mut suffix = TokenStream::new();
         if let Some(typ) = tree.value() {
-            let typ = match typ {
+            let typ = match *typ {
                 Type::Icann => syn::parse_str::<syn::Type>("Icann").unwrap(),
                 Type::Private => syn::parse_str::<syn::Type>("Private").unwrap(),
             };
@@ -220,8 +220,8 @@ enum Uri {
 }
 
 fn lit_str(token: syn::Ident, lit: &Lit) -> Uri {
-    match lit {
-        Lit::Str(s) => {
+    match *lit {
+        Lit::Str(ref s) => {
             let resource = s.value();
             if token == "url" {
                 Uri::Url(resource)
