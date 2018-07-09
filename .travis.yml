@@ -1,11 +1,10 @@
 language: rust
 
 rust:
-- nightly
-- beta
-- stable
 - 1.25.0
+- stable
+- beta
+- nightly
 
 script:
-#- travis_wait 30 cargo test
-- cargo test -p psl-codegen
+- cd psl && travis_wait 30 cargo test
