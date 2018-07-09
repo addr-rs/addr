@@ -1,6 +1,12 @@
 [package]
 name = "psl-codegen"
+description = "Generate native Rust code from Mozilla's Public Suffix List"
 version = "0.1.0"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/rushmorem/psl"
+documentation = "https://docs.rs/psl-codegen"
+readme = "README.md"
+keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 
 [lib]

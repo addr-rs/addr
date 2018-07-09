@@ -1,6 +1,12 @@
 [package]
 name = "psl"
+description = "A native library for Mozilla's Public Suffix List"
 version = "0.1.0"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/rushmorem/psl"
+documentation = "https://docs.rs/psl"
+readme = "README.md"
+keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 
 [features]

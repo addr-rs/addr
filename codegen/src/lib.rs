@@ -1,3 +1,5 @@
+//! Download and compile the Public Suffix List to native Rust code
+
 #![recursion_limit="128"]
 
 extern crate proc_macro;

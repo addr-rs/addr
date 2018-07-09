@@ -15,24 +15,28 @@ use core::{str, fmt};
 #[cfg(feature = "list")]
 pub use list::List;
 
+/// Type of suffix
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Type {
     Icann,
     Private,
 }
 
+/// Information about the suffix
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Info {
     Suffix(usize, Type),
     Incomplete,
 }
 
+/// The suffix of a domain name
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Suffix<'a> {
     str: &'a str,
     typ: Option<Type>,
 }
 
+/// A registrable domain name
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Domain<'a> {
     str: &'a str,
@@ -49,13 +53,13 @@ pub trait Psl {
     /// - The labels are in reverse order. That is, `&["com", "example"]` instead of
     /// `&["example", "com"]`.
     /// - The labels are in lowercase.
-    /// - The labels are in unicode, rather than punnycode.
+    /// - The labels are in unicode, rather than punycode.
     fn find<'a, T>(&self, labels: T) -> Option<Info>
         where T: IntoIterator<Item = &'a str>;
 
     /// Get the public suffix of the domain
     /// 
-    /// *NB:* `domain` must be in lowercase
+    /// *NB:* `domain` must be in lowercase and in unicode
     fn public_suffix<'a>(&self, domain: &'a str) -> Option<Suffix<'a>> {
         if domain.starts_with('.') || domain.contains("..") {
             return None;
@@ -66,7 +70,7 @@ pub trait Psl {
             .rev()
             .peekable();
         if labels.peek().is_none() { return None; }
-        let (len, typ) = match self.find_unchecked(labels.clone()) {
+        let (len, typ) = match self.find(labels.clone()) {
             Some(info) => {
                 match info {
                     Info::Suffix(len, typ) => { (len, Some(typ)) }
@@ -90,7 +94,7 @@ pub trait Psl {
 
     /// Get the registrable domain
     /// 
-    /// *NB:* `domain` must be in lowercase
+    /// *NB:* `domain` must be in lowercase and in unicode
     fn registrable_domain<'a>(&self, domain: &'a str) -> Option<Domain<'a>> {
         let suf = self.public_suffix(domain)?;
         let label = domain
