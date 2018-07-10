@@ -1,2 +1,13 @@
 [workspace]
 members = ["psl", "codegen", "lexer"]
+
+[package]
+name = "addr"
+description = "A library for parsing domain names and email addresses"
+version = "0.0.0"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/addr-rs/addr"
+documentation = "https://docs.rs/addr"
+readme = "README.md"
+keywords = ["tld", "gtld", "cctld", "domain", "psl"]
+authors = ["rushmorem <rushmore@webenchanter.com>"]
