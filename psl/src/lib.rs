@@ -30,14 +30,14 @@ pub struct Info {
 }
 
 /// The suffix of a domain name
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Suffix<'a> {
     str: &'a str,
     typ: Option<Type>,
 }
 
 /// A registrable domain name
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Domain<'a> {
     str: &'a str,
     suf: Suffix<'a>,
@@ -110,7 +110,7 @@ impl<'a> Domain<'a> {
     }
 
     pub fn suffix(&self) -> Suffix<'a> {
-        Suffix { ..self.suf }
+        self.suf
     }
 }
 
