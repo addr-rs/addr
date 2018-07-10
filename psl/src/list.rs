@@ -24,7 +24,7 @@ impl<'de> Deserialize<'de> for Domain<'de> {
         where D: Deserializer<'de>
     {
         let input = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
-        match List.registrable_domain(input) {
+        match List.domain(input) {
             Some(domain) => { Ok(domain) }
             None => {
                 let invalid = Unexpected::Str(input);
@@ -47,7 +47,7 @@ impl<'de> Deserialize<'de> for Suffix<'de> {
         where D: Deserializer<'de>
     {
         let input = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
-        match List.public_suffix(input) {
+        match List.suffix(input) {
             Some(suffix) => { Ok(suffix) }
             None => {
                 let invalid = Unexpected::Str(input);

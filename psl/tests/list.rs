@@ -3,6 +3,8 @@ extern crate psl_lexer;
 extern crate rspec;
 extern crate idna;
 
+use std::env;
+
 use psl::{Psl, List};
 use psl_lexer::request;
 use self::rspec::context::rdescribe;
@@ -32,6 +34,11 @@ fn list_behaviour() {
                         Some(res) => res,
                         None => { panic!(format!("line {} of the test file doesn't seem to be valid", i)); },
                     };
+                    if let Ok(var) = env::var("PSL_TLD") {
+                        if !input.trim().trim_right_matches('.').ends_with(&var) {
+                            continue;
+                        }
+                    }
                     let (expected_root, expected_suffix) = match test.next() {
                         Some("null") => (None, None),
                         Some(root) => {
@@ -51,7 +58,7 @@ fn list_behaviour() {
                     let (mut found_root, mut found_suffix) = if domain.starts_with(".") || domain.contains("..") {
                         (None, None)
                     } else {
-                        list.registrable_domain(&domain.to_lowercase())
+                        list.domain(&domain.to_lowercase())
                         .map(|d| {
                             let domain = d.as_str().to_owned();
                             let suffix = d.suffix().as_str().to_owned();

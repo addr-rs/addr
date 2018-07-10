@@ -24,9 +24,9 @@ pub enum Type {
 
 /// Information about the suffix
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub enum Info {
-    Suffix(usize, Type),
-    Incomplete,
+pub struct Info {
+    pub len: usize,
+    pub typ: Option<Type>,
 }
 
 /// The suffix of a domain name
@@ -49,41 +49,18 @@ pub trait Psl {
     ///
     /// # Assumptions
     ///
-    /// - The input is an `Iterator` of domain labels.
-    /// - The labels are in reverse order. That is, `&["com", "example"]` instead of
-    /// `&["example", "com"]`.
-    /// - The labels are in lowercase.
-    /// - The labels are in unicode, rather than punycode.
-    fn find<'a, T>(&self, labels: T) -> Option<Info>
-        where T: IntoIterator<Item = &'a str>;
+    /// *NB:* `domain` must be in lowercase, in unicode and with no trailing dot
+    fn find(&self, domain: &str) -> Info;
 
     /// Get the public suffix of the domain
     /// 
-    /// *NB:* `domain` must be in lowercase and in unicode
-    fn public_suffix<'a>(&self, domain: &'a str) -> Option<Suffix<'a>> {
-        let mut labels = domain
-            .trim_right_matches('.')
-            .split('.')
-            .rev()
-            .peekable();
-        if labels.peek().is_none() { return None; }
-        let (len, typ) = match self.find(labels.clone()) {
-            Some(info) => {
-                match info {
-                    Info::Suffix(len, typ) => { (len, Some(typ)) }
-                    Info::Incomplete => { return None; }
-                }
-            }
-            None => { (1, None) }
-        };
-        let mut slen = 0;
-        if domain.ends_with('.') {
-            slen += 1;
-        };
-        for label in labels.take(len) {
-            slen += label.len() + 1;
+    /// *NB:* `domain` must be in lowercase, in unicode and with no trailing dot
+    fn suffix<'a>(&self, domain: &'a str) -> Option<Suffix<'a>> {
+        let Info { len, typ } = self.find(domain);
+        if len == 0 {
+            return None;
         }
-        let offset = domain.len() + 1 - slen;
+        let offset = domain.len() - len;
         let bytes = domain.as_bytes();
         let str = str::from_utf8(&bytes[offset..]).ok()?;
         Some(Suffix { str, typ })
@@ -91,16 +68,16 @@ pub trait Psl {
 
     /// Get the registrable domain
     /// 
-    /// *NB:* `domain` must be in lowercase and in unicode
-    fn registrable_domain<'a>(&self, domain: &'a str) -> Option<Domain<'a>> {
-        let suf = self.public_suffix(domain)?;
-        let label = domain
+    /// *NB:* `domain` must be in lowercase, in unicode and with no trailing dot
+    fn domain<'a>(&self, domain: &'a str) -> Option<Domain<'a>> {
+        let suf = self.suffix(domain)?;
+        let mut labels = domain
             .trim_right_matches(suf.as_str())
-            .trim_right_matches('.')
             .split('.')
-            .last()?;
-        if label.is_empty() { return None; }
-        let offset = domain.len() - (suf.as_str().len() + label.len() + 1);
+            .rev();
+        // remove trailing dot
+        labels.next()?;
+        let offset = domain.len() - (suf.as_str().len() + labels.next()?.len() + 1);
         let bytes = domain.as_bytes();
         let str = str::from_utf8(&bytes[offset..]).ok()?;
         Some(Domain { str, suf })
@@ -146,11 +123,5 @@ impl<'a> fmt::Display for Domain<'a> {
 impl Default for Type {
     fn default() -> Self {
         Type::Icann
-    }
-}
-
-impl Default for Info {
-    fn default() -> Self {
-        Info::Incomplete
     }
 }

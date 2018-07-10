@@ -1,7 +1,5 @@
 //! Download and compile the Public Suffix List to native Rust code
 
-#![recursion_limit="128"]
-
 extern crate proc_macro;
 extern crate proc_macro2;
 extern crate psl_lexer;
@@ -45,14 +43,16 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let expanded = quote! {
         impl #impl_generics #krate Psl for #name #ty_generics #where_clause {
             #[allow(unused_assignments)]
-            fn find<'a, T>(&self, labels: T) -> Option<#krate Info>
-                where T: IntoIterator<Item=&'a str>
-            {
-                let mut suffix = #krate Info::Incomplete;
-                let mut index = 1;
+            fn find(&self, domain: &str) -> #krate Info {
+                let mut typ = None;
+                let mut len = 0;
 
-                let mut labels = labels.into_iter();
+                let mut labels = domain.split('.').rev();
+
                 #body
+
+                len -= 1;
+                #krate Info { len, typ }
             }
         }
     };
@@ -144,63 +144,59 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
     let mut body = TokenStream::new();
     let mut footer = TokenStream::new();
     for (label, tree) in list {
-        let mut suffix = TokenStream::new();
-        if let Some(typ) = tree.value() {
-            let typ = match *typ {
+        let mut typ = TokenStream::new();
+        if let Some(val) = tree.value() {
+            let t = match *val {
                 Type::Icann => syn::parse_str::<syn::Type>("Icann").unwrap(),
                 Type::Private => syn::parse_str::<syn::Type>("Private").unwrap(),
             };
-            suffix = quote!(suffix = #krate Info::Suffix(index, #krate Type::#typ););
+            typ = quote! {
+                typ = Some(#krate Type::#t);
+            };
         }
-        let children = if tree.children().is_empty() {
-            quote! {
-                Some(suffix)
-            }
-        } else {
-            build(tree.children_with_keys(), AtRoot(false))
-        };
+        let children = build(tree.children_with_keys(), AtRoot(false));
         if label.starts_with('!') {
             let label = label.trim_left_matches('!');
             head.append_all(quote! {
                 #label => {
-                    index -= 1;
-                    #suffix
-                    #children
+                    #typ
                 }
             });
         } else if label == "_" {
             footer.append_all(quote! {
-                _ => {
-                    #suffix
+                wild => {
+                    len += wild.len() + 1;
+                    #typ
                     #children
                 }
             });
         } else {
             body.append_all(quote! {
                 #label => {
-                    #suffix
+                    len += #label.len() + 1;
+                    #typ
                     #children
                 }
             });
         }
     }
 
-    let (index_incr, end_of_matches) = if at_root {
-        (TokenStream::new(), quote!(None))
+    let (end_of_matches, end_of_labels) = if at_root {
+        let eom = quote! {
+            val => {
+                len += val.len() + 1;
+            }
+        };
+        (eom, quote!(len += 1;))
     } else {
-        let index = quote!(index += 1;);
-        let eom = quote!(Some(suffix));
-        (index, eom)
+        (quote!(_ => {}), TokenStream::new())
     };
 
     if footer.is_empty() {
-        footer.append_all(quote! {
-            _ => { #end_of_matches }
-        });
+        footer.append_all(quote!(#end_of_matches));
     }
 
     quote! {
-        #index_incr
         match labels.next() {
             Some(label) => {
                 match label {
@@ -209,7 +205,7 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
                     #footer
                 }
             }
-            None => { #end_of_matches }
+            None => { #end_of_labels }
         }
     }
 }

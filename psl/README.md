@@ -22,9 +22,9 @@ use psl::{Psl, List};
 
 let list = List::new();
 
-let suffix = list.public_suffix("example.com")?;
+let suffix = list.suffix("example.com")?;
 
-let domain = list.registrable_domain("example.com")?;
+let domain = list.domain("example.com")?;
 ```
 
 ## Use Cases
