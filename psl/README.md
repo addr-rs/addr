@@ -1,16 +1,5 @@
 # A native Rust library for Mozilla's Public Suffix List
 
-## Setting Up
-
-Add this crate to your `Cargo.toml`:
-
-```toml
-[dependencies]
-psl = "0.1"
-```
-
-## Examples
-
 ```rust
 extern crate psl;
 
