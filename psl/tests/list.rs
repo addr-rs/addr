@@ -4,6 +4,9 @@ extern crate rspec;
 extern crate idna;
 
 use std::env;
+use std::path::Path;
+use std::fs::File;
+use std::io::prelude::*;
 
 use psl::{Psl, List};
 use psl_lexer::request;
@@ -15,7 +18,14 @@ fn list_behaviour() {
 
     rdescribe("the official test", |_| {
         let tests = "https://raw.githubusercontent.com/publicsuffix/list/master/tests/tests.txt";
-        let body = request(tests).unwrap();
+        let body = request(tests).unwrap_or_else(|_| {
+            let root = env::var("CARGO_MANIFEST_DIR").unwrap();
+            let path = Path::new(&root).join("tests").join("tests.txt");
+            let mut file = File::open(path).unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).unwrap();
+            contents
+        });
 
         let mut parse = false;
 

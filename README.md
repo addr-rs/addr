@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/addr-rs/addr.svg?branch=master)](https://travis-ci.org/addr-rs/addr) [![Latest Version](https://img.shields.io/crates/v/addr.svg)](https://crates.io/crates/addr) [![Docs](https://docs.rs/addr/badge.svg)](https://docs.rs/addr)
 
-This library uses Mozilla's [Public Suffix List](https://publicsuffix.org) to reliably parse domain names and email addresses in [Rust](https://www.rust-lang.org). If all you need is to check whether a domain is syntactically correct and do not need to utilise the list you can just use `DomainName::has_valid_syntax` method. This method will reliably tell you if a domain has valid syntax whether or not it is an internationalised domain name (IDN). It also checks the length restrictions for each label, total number of labels and full length of domain name.
+This library uses Mozilla's [Public Suffix List](https://publicsuffix.org) to reliably parse domain names and email addresses in [Rust](https://www.rust-lang.org). If all you need is to check whether a domain is syntactically correct and do not need to utilise the list you can just use `Domain::has_valid_syntax` method. This method will reliably tell you if a domain has valid syntax whether or not it is an internationalised domain name (IDN). It also checks the length restrictions for each label, total number of labels and full length of domain name.
 
 You can supply your own list by setting the environment variable `PSL_URL` or `PSL_PATH`. You can also use the plural forms of those environment variables with the values separated by commas. The first successful list retrieved will be used. If you don't supply your own list, one will be downloaded for you from the official site during the build. If you are only interested in a few TLDs, you can pass them in as `PSL_TLD` or `PSL_TLDS`. I recommend setting that enviroment variable when developing to boost compile times.
 
@@ -25,24 +25,24 @@ use addr::{Domain, DomainName, DnsName};
 // Using the list you can find out the root domain
 // or extension of any given domain name
 let domain: DomainName = "www.example.com".parse()?;
-assert_eq!(name.root(), Some("example.com"));
-assert_eq!(name.suffix(), Some("com"));
+assert_eq!(name.root(), "example.com");
+assert_eq!(name.suffix(), "com");
 
 let name: DomainName = "www.食狮.中国".parse()?;
-assert_eq!(name.root(), Some("食狮.中国"));
-assert_eq!(name.suffix(), Some("中国"));
+assert_eq!(name.root(), "食狮.中国");
+assert_eq!(name.suffix(), "中国");
 
 let name: DomainName = "www.xn--85x722f.xn--55qx5d.cn".parse()?;
-assert_eq!(name.root(), Some("xn--85x722f.xn--55qx5d.cn"));
-assert_eq!(name.suffix(), Some("xn--55qx5d.cn"));
+assert_eq!(name.root(), "xn--85x722f.xn--55qx5d.cn");
+assert_eq!(name.suffix(), "xn--55qx5d.cn");
 
 let name: DomainName = "a.b.example.uk.com".parse()?;
-assert_eq!(name.root(), Some("example.uk.com"));
-assert_eq!(name.suffix(), Some("uk.com"));
+assert_eq!(name.root(), "example.uk.com");
+assert_eq!(name.suffix(), "uk.com");
 
 let name: DnsName = "_tcp.example.com.".parse()?;
-assert_eq!(name.root(), Some("example.com"));
-assert_eq!(name.suffix(), Some("com"));
+assert_eq!(name.root(), "example.com");
+assert_eq!(name.suffix(), "com");
 
 // You can also find out if this is an ICANN domain
 assert!(!name.is_icann());

@@ -1,29 +1,76 @@
-#![no_std]
+extern crate psl;
 
-use core::str::FromStr;
+use std::str::FromStr;
 
-pub trait Domain {
-    fn is_icann(&self) -> bool;
-    fn is_private(&self) -> bool;
-    fn has_known_suffix(&self) -> bool;
+use psl::{Psl, List};
+
+pub trait Domain<'a> {
+    fn as_str(&self) -> &'a str;
+    fn root(&self) -> psl::Domain<'a>;
 }
 
-pub struct DomainName;
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct DomainName<'a> {
+    str: &'a str,
+    root: psl::Domain<'a>,
+}
 
-pub struct DnsName;
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct DnsName<'a> {
+    str: &'a str,
+    root: psl::Domain<'a>,
+}
 
 impl FromStr for DomainName {
     type Err = ();
 
-    fn from_str(_s: &str) -> Result<Self, Self::Err> {
-        unimplemented!();
+    fn from_str(str: &str) -> Result<Self, Self::Err> {
+        match List::new().domain(str) {
+            Some(root) => Ok(DomainName { str, root })
+            None => Err(())
+        }
     }
 }
 
 impl FromStr for DnsName {
     type Err = ();
 
-    fn from_str(_s: &str) -> Result<Self, Self::Err> {
-        unimplemented!();
+    fn from_str(str: &str) -> Result<Self, Self::Err> {
+        match List::new().domain(str) {
+            Some(root) => Ok(DnsName { str, root })
+            None => Err(())
+        }
+    }
+}
+
+impl<'a> Domain<'a> for DomainName<'a> {
+    fn as_str(&self) -> &'a str {
+        &self.str
+    }
+
+    fn root(&self) -> psl::Domain<'a> {
+        self.root
+    }
+}
+
+impl<'a> Domain<'a> for DnsName<'a> {
+    fn as_str(&self) -> &'a str {
+        &self.str
+    }
+
+    fn root(&self) -> psl::Domain<'a> {
+        self.root
+    }
+}
+
+impl<'a> fmt::Display for DomainName<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.str)
+    }
+}
+
+impl<'a> fmt::Display for DnsName<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.str)
     }
 }

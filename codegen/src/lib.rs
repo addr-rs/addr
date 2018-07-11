@@ -47,7 +47,12 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let mut typ = None;
                 let mut len = 0;
 
-                let mut labels = domain.split('.').rev();
+                let mut labels = if domain.ends_with('.') {
+                    len += 1;
+                    (&domain[..domain.len()-1]).split('.').rev()
+                } else {
+                    domain.split('.').rev()
+                };
 
                 #body
 
@@ -60,6 +65,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     expanded.into()
 }
 
+#[derive(Debug)]
 struct AtRoot(bool);
 
 fn body(attrs: &[Attribute]) -> TokenStream {
@@ -210,6 +216,7 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
     }
 }
 
+#[derive(Debug)]
 enum Uri {
     Url(String),
     Path(String),
