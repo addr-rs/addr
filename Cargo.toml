@@ -13,5 +13,5 @@ keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 
 [dependencies.psl]
-version = "0.1"
+version = "0.2"
 path = "./psl"
