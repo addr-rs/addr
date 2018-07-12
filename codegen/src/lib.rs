@@ -1,5 +1,7 @@
 //! Download and compile the Public Suffix List to native Rust code
 
+#![recursion_limit="128"]
+
 extern crate proc_macro;
 extern crate proc_macro2;
 extern crate psl_lexer;
@@ -47,16 +49,23 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let mut typ = None;
                 let mut len = 0;
 
-                let mut labels = if domain.ends_with('.') {
+                let (rest, fqdn) = if domain.ends_with('.') {
                     len += 1;
-                    (&domain[..domain.len()-1]).split('.').rev()
+                    (&domain[..domain.len()-1], true)
                 } else {
-                    domain.split('.').rev()
+                    (domain, false)
                 };
+
+                let mut labels = rest.split('.').rev();
 
                 #body
 
-                len -= 1;
+                if fqdn && len == 2 {
+                    len = 0;
+                } else {
+                    len -= 1;
+                }
+
                 #krate Info { len, typ }
             }
         }

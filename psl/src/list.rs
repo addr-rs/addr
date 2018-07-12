@@ -8,6 +8,7 @@ pub struct List;
 
 impl List {
     /// Creates an instance of a new list
+    #[inline]
     pub fn new() -> List { List }
 }
 
@@ -19,11 +20,11 @@ impl<'a> Serialize for Domain<'a> {
     }
 }
 
-impl<'de> Deserialize<'de> for Domain<'de> {
+impl<'a> Deserialize<'a> for Domain<'a> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+        where D: Deserializer<'a>
     {
-        let input = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
+        let input = <&'a str as Deserialize<'a>>::deserialize(deserializer)?;
         match List.domain(input) {
             Some(domain) => { Ok(domain) }
             None => {
@@ -42,11 +43,11 @@ impl<'a> Serialize for Suffix<'a> {
     }
 }
 
-impl<'de> Deserialize<'de> for Suffix<'de> {
+impl<'a> Deserialize<'a> for Suffix<'a> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+        where D: Deserializer<'a>
     {
-        let input = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
+        let input = <&'a str as Deserialize<'a>>::deserialize(deserializer)?;
         match List.suffix(input) {
             Some(suffix) => { Ok(suffix) }
             None => {

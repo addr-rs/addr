@@ -55,6 +55,7 @@ pub trait Psl {
     /// Get the public suffix of the domain
     /// 
     /// *NB:* `domain` must be unicode and lowercase
+    #[inline]
     fn suffix<'a>(&self, domain: &'a str) -> Option<Suffix<'a>> {
         let Info { len, typ } = self.find(domain);
         if len == 0 {
@@ -69,6 +70,7 @@ pub trait Psl {
     /// Get the registrable domain
     /// 
     /// *NB:* `domain` must be unicode and lowercase
+    #[inline]
     fn domain<'a>(&self, domain: &'a str) -> Option<Domain<'a>> {
         let suf = self.suffix(domain)?;
         let mut labels = domain
@@ -77,7 +79,9 @@ pub trait Psl {
             .rev();
         // remove trailing dot
         labels.next()?;
-        let offset = domain.len() - (suf.as_str().len() + labels.next()?.len() + 1);
+        let root_label = labels.next()?;
+        let registrable_len = root_label.len() + 1 + suf.as_str().len();
+        let offset = domain.len() - registrable_len;
         let bytes = domain.as_bytes();
         let str = str::from_utf8(&bytes[offset..]).ok()?;
         Some(Domain { str, suf })
@@ -85,32 +89,37 @@ pub trait Psl {
 }
 
 impl<'a> Suffix<'a> {
+    #[inline]
     pub fn as_str(&self) -> &str {
         &self.str
     }
 
+    #[inline]
     pub fn typ(&self) -> Option<Type> {
         self.typ
     }
 
+    #[inline]
     pub fn is_known(&self) -> bool {
         self.typ.is_some()
+    }
+}
+
+impl<'a> Domain<'a> {
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        &self.str
+    }
+
+    #[inline]
+    pub fn suffix(&self) -> Suffix<'a> {
+        self.suf
     }
 }
 
 impl<'a> fmt::Display for Suffix<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.str)
-    }
-}
-
-impl<'a> Domain<'a> {
-    pub fn as_str(&self) -> &str {
-        &self.str
-    }
-
-    pub fn suffix(&self) -> Suffix<'a> {
-        self.suf
     }
 }
 
