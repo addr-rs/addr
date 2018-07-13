@@ -22,9 +22,12 @@ prefix = []
 [dependencies]
 proc-macro2 = "0.4"
 quote = "0.6"
-syn = "0.14"
 sequence_trie = "0.3"
 idna = "0.1"
+
+[dependencies.syn]
+version = "0.14"
+features = ["full"]
 
 [dependencies.psl-lexer]
 version = "0.1"

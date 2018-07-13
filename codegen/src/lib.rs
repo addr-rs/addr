@@ -56,7 +56,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     (domain, false)
                 };
 
-                let mut labels = rest.split('.').rev();
+                let mut labels = rest.as_bytes().split(|x| *x == b'.').rev();
 
                 #body
 
@@ -172,8 +172,9 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
         let children = build(tree.children_with_keys(), AtRoot(false));
         if label.starts_with('!') {
             let label = label.trim_left_matches('!');
+            let pat = pat(label);
             head.append_all(quote! {
-                #label => {
+                #pat => {
                     #typ
                 }
             });
@@ -186,9 +187,10 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
                 }
             });
         } else {
+            let pat = pat(label);
             body.append_all(quote! {
-                #label => {
-                    len += #label.len() + 1;
+                #pat => {
+                    len += #pat.len() + 1;
                     #typ
                     #children
                 }
@@ -223,6 +225,11 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
             None => { #end_of_labels }
         }
     }
+}
+
+fn pat(label: &str) -> syn::ExprArray {
+    let label = format!("{:?}", label.as_bytes());
+    syn::parse_str(&label).unwrap()
 }
 
 #[derive(Debug)]
