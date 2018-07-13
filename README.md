@@ -43,16 +43,6 @@ assert_eq!(name.suffix(), "uk.com");
 let name: DnsName = "_tcp.example.com.".parse()?;
 assert_eq!(name.root(), "example.com");
 assert_eq!(name.suffix(), "com");
-
-// You can also find out if this is an ICANN domain
-assert!(!name.is_icann());
-
-// or a private one
-assert!(name.is_private());
-
-// In any case if the domain's suffix is in the list
-// then this is definately a registrable domain name
-assert!(name.has_known_suffix());
 ```
 
 ## Use Cases
