@@ -20,7 +20,7 @@ default-features = false
 optional = true
 
 [dependencies.psl-codegen]
-version = "0.2"
+version = "0.3"
 default-features = false
 path = "../codegen"
 optional = true
