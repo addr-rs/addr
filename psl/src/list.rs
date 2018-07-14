@@ -16,7 +16,7 @@ impl<'a> Serialize for Domain<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer
     {
-        serializer.serialize_str(self.as_str())
+        serializer.serialize_bytes(self.as_bytes())
     }
 }
 
@@ -39,7 +39,7 @@ impl<'a> Serialize for Suffix<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer
     {
-        serializer.serialize_str(self.as_str())
+        serializer.serialize_bytes(self.as_bytes())
     }
 }
 

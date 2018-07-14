@@ -32,15 +32,15 @@ pub struct Info {
 /// The suffix of a domain name
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Suffix<'a> {
-    str: &'a str,
+    bytes: &'a [u8],
     typ: Option<Type>,
 }
 
 /// A registrable domain name
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Domain<'a> {
-    str: &'a str,
-    suf: Suffix<'a>,
+    bytes: &'a [u8],
+    suffix: Suffix<'a>,
 }
 
 /// A list of all public suffices
@@ -50,21 +50,21 @@ pub trait Psl {
     /// # Assumptions
     ///
     /// *NB:* `domain` must be unicode and lowercase
-    fn find(&self, domain: &str) -> Info;
+    fn find(&self, domain: &[u8]) -> Info;
 
     /// Get the public suffix of the domain
     /// 
     /// *NB:* `domain` must be unicode and lowercase
     #[inline]
     fn suffix<'a>(&self, domain: &'a str) -> Option<Suffix<'a>> {
+        let domain = domain.as_bytes();
         let Info { len, typ } = self.find(domain);
         if len == 0 {
             return None;
         }
         let offset = domain.len() - len;
-        let bytes = domain.as_bytes();
-        let str = str::from_utf8(&bytes[offset..]).ok()?;
-        Some(Suffix { str, typ })
+        let bytes = &domain[offset..];
+        Some(Suffix { bytes, typ })
     }
 
     /// Get the registrable domain
@@ -72,26 +72,32 @@ pub trait Psl {
     /// *NB:* `domain` must be unicode and lowercase
     #[inline]
     fn domain<'a>(&self, domain: &'a str) -> Option<Domain<'a>> {
-        let suf = self.suffix(domain)?;
-        let mut labels = domain
-            .trim_right_matches(suf.as_str())
-            .split('.')
-            .rev();
-        // remove trailing dot
-        labels.next()?;
-        let root_label = labels.next()?;
-        let registrable_len = root_label.len() + 1 + suf.as_str().len();
+        let suffix = self.suffix(domain)?;
+        let domain = domain.as_bytes();
+        let domain_len = domain.len();
+        let suffix_len = suffix.bytes.len();
+        if domain_len < suffix_len + 2 {
+            return None;
+        }
+        let offset = domain_len - (1 + suffix_len);
+        let subdomain = &domain[..offset];
+        let root_label = subdomain.rsplitn(2, |x| *x == b'.').next()?;
+        let registrable_len = root_label.len() + 1 + suffix_len;
         let offset = domain.len() - registrable_len;
-        let bytes = domain.as_bytes();
-        let str = str::from_utf8(&bytes[offset..]).ok()?;
-        Some(Domain { str, suf })
+        let bytes = &domain[offset..];
+        Some(Domain { bytes, suffix })
     }
 }
 
 impl<'a> Suffix<'a> {
     #[inline]
-    pub fn as_str(&self) -> &str {
-        &self.str
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    #[inline]
+    pub fn to_str(&self) -> &str {
+        str::from_utf8(&self.bytes).unwrap()
     }
 
     #[inline]
@@ -107,25 +113,32 @@ impl<'a> Suffix<'a> {
 
 impl<'a> Domain<'a> {
     #[inline]
-    pub fn as_str(&self) -> &str {
-        &self.str
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    #[inline]
+    pub fn to_str(&self) -> &str {
+        str::from_utf8(&self.bytes).unwrap()
     }
 
     #[inline]
     pub fn suffix(&self) -> Suffix<'a> {
-        self.suf
+        self.suffix
     }
 }
 
 impl<'a> fmt::Display for Suffix<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.str)
+        f.write_str(self.to_str())
+        //write!(f, "{}", self.str)
     }
 }
 
 impl<'a> fmt::Display for Domain<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.str)
+        f.write_str(self.to_str())
+        //write!(f, "{}", self.str)
     }
 }
 

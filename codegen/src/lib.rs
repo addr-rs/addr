@@ -45,18 +45,19 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let expanded = quote! {
         impl #impl_generics #krate Psl for #name #ty_generics #where_clause {
             #[allow(unused_assignments)]
-            fn find(&self, domain: &str) -> #krate Info {
+            fn find(&self, domain: &[u8]) -> #krate Info {
                 let mut typ = None;
                 let mut len = 0;
 
-                let (rest, fqdn) = if domain.ends_with('.') {
-                    len += 1;
-                    (&domain[..domain.len()-1], true)
-                } else {
-                    (domain, false)
-                };
+                let mut labels = domain.rsplit(|x| *x == b'.');
 
-                let mut labels = rest.as_bytes().split(|x| *x == b'.').rev();
+                let fqdn = if domain.ends_with(b".") {
+                    len += 1;
+                    labels.next();
+                    true
+                } else {
+                    false
+                };
 
                 #body
 

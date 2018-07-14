@@ -70,8 +70,8 @@ fn list_behaviour() {
                     } else {
                         list.domain(&domain.to_lowercase())
                         .map(|d| {
-                            let domain = d.as_str().to_owned();
-                            let suffix = d.suffix().as_str().to_owned();
+                            let domain = d.to_string();
+                            let suffix = d.suffix().to_string();
                             (Some(domain), Some(suffix))
                         })
                         .unwrap_or((None, None))
