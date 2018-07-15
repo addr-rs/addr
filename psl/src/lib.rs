@@ -83,7 +83,7 @@ pub trait Psl {
         let subdomain = &domain[..offset];
         let root_label = subdomain.rsplitn(2, |x| *x == b'.').next()?;
         let registrable_len = root_label.len() + 1 + suffix_len;
-        let offset = domain.len() - registrable_len;
+        let offset = domain_len - registrable_len;
         let bytes = &domain[offset..];
         Some(Domain { bytes, suffix })
     }
