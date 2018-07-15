@@ -38,7 +38,9 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let body = body(&input.attrs);
+    let Attrs { resources } = attrs(&input.attrs);
+
+    let body = body(resources);
 
     let krate = krate();
 
@@ -78,10 +80,8 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 #[derive(Debug)]
 struct AtRoot(bool);
 
-fn body(attrs: &[Attribute]) -> TokenStream {
+fn body(resources: Vec<Uri>) -> TokenStream {
     use self::Uri::*;
-
-    let resources = uri(attrs);
 
     let mut list = if resources.is_empty() {
         List::fetch()
@@ -239,6 +239,11 @@ enum Uri {
     Path(String),
 }
 
+#[derive(Debug)]
+struct Attrs {
+    resources: Vec<Uri>,
+}
+
 fn lit_str(token: syn::Ident, lit: &Lit) -> Uri {
     match *lit {
         Lit::Str(ref s) => {
@@ -253,28 +258,28 @@ fn lit_str(token: syn::Ident, lit: &Lit) -> Uri {
     }
 }
 
-fn uri(attrs: &[Attribute]) -> Vec<Uri> {
+fn attrs(list: &[Attribute]) -> Attrs {
     use self::Meta::*;
 
-    let mut resources = Vec::new();
+    let mut attrs = Attrs { resources: Vec::new() };
 
     for key in &["PSL_PATH", "PSL_PATHS", "PSL_URL", "PSL_URLS"] {
         if let Ok(val) = env::var(key) {
             for resource in val.split(',').map(|x| x.trim()).filter(|x| !x.is_empty()) {
                 if key.contains("URL") {
-                    resources.push(Uri::Url(resource.to_owned()));
+                    attrs.resources.push(Uri::Url(resource.to_owned()));
                 } else {
-                    resources.push(Uri::Path(resource.to_owned()));
+                    attrs.resources.push(Uri::Path(resource.to_owned()));
                 }
             }
         }
     }
 
-    if !resources.is_empty() {
-        return resources;
+    if !attrs.resources.is_empty() {
+        return attrs;
     }
 
-    for attr in attrs {
+    for attr in list {
         if let Some(List(ml)) = attr.interpret_meta() {
             if ml.ident == "psl" {
                 for nm in ml.nested {
@@ -284,7 +289,7 @@ fn uri(attrs: &[Attribute]) -> Vec<Uri> {
                                 NameValue(nv) => {
                                     let token = nv.ident;
                                     if token == "url" || token == "path" {
-                                        resources.push(lit_str(token, &nv.lit));
+                                        attrs.resources.push(lit_str(token, &nv.lit));
                                     }
                                 }
                                 List(list) => {
@@ -295,7 +300,7 @@ fn uri(attrs: &[Attribute]) -> Vec<Uri> {
                                         for item in list.nested {
                                             match item {
                                                 Literal(lit) => {
-                                                    resources.push(lit_str(token.clone(), &lit));
+                                                    attrs.resources.push(lit_str(token.clone(), &lit));
                                                 }
                                                 Meta(_) => {
                                                     panic!("expected a {}, found an object", token);
@@ -320,5 +325,5 @@ fn uri(attrs: &[Attribute]) -> Vec<Uri> {
         }
     }
 
-    resources
+    attrs
 }
