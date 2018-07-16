@@ -40,9 +40,28 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let Attrs { resources } = attrs(&input.attrs);
 
-    let body = body(resources);
+    let string_match = if let Ok(val) = env::var("PSL_STRING_MATCH") {
+        if val == "1" { true } else { false }
+    } else {
+        false
+    };
 
     let krate = krate();
+
+    let labels = if string_match {
+        quote! {
+            match ::core::str::from_utf8(domain) {
+                Ok(domain) => domain.rsplit('.'),
+                Err(_) => {
+                    return #krate Info { len, typ };
+                }
+            }
+        }
+    } else {
+        quote!(domain.rsplit(|x| *x == b'.'))
+    };
+
+    let body = body(resources, string_match);
 
     let expanded = quote! {
         impl #impl_generics #krate Psl for #name #ty_generics #where_clause {
@@ -51,7 +70,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let mut typ = None;
                 let mut len = 0;
 
-                let mut labels = domain.rsplit(|x| *x == b'.');
+                let mut labels = #labels;
 
                 let fqdn = if domain.ends_with(b".") {
                     len += 1;
@@ -80,7 +99,10 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 #[derive(Debug)]
 struct AtRoot(bool);
 
-fn body(resources: Vec<Uri>) -> TokenStream {
+#[derive(Debug)]
+struct StringMatch(bool);
+
+fn body(resources: Vec<Uri>, string_match: bool) -> TokenStream {
     use self::Uri::*;
 
     let mut list = if resources.is_empty() {
@@ -139,10 +161,10 @@ fn body(resources: Vec<Uri>) -> TokenStream {
         }
     }
 
-    build(tree.children_with_keys(), AtRoot(true))
+    build(tree.children_with_keys(), AtRoot(true), StringMatch(string_match))
 }
 
-fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtRoot) -> TokenStream {
+fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtRoot, StringMatch(string_match): StringMatch) -> TokenStream {
     if list.is_empty() {
         if at_root {
             panic!("
@@ -170,7 +192,15 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
                 typ = Some(#krate Type::#t);
             };
         }
-        let children = build(tree.children_with_keys(), AtRoot(false));
+        let children = build(tree.children_with_keys(), AtRoot(false), StringMatch(string_match));
+        let pat = |label| {
+            if string_match {
+                quote!(#label)
+            } else {
+                let pat = array_expr(label);
+                quote!(#pat)
+            }
+        };
         if label.starts_with('!') {
             let label = label.trim_left_matches('!');
             let pat = pat(label);
@@ -228,7 +258,7 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
     }
 }
 
-fn pat(label: &str) -> syn::ExprArray {
+fn array_expr(label: &str) -> syn::ExprArray {
     let label = format!("{:?}", label.as_bytes());
     syn::parse_str(&label).unwrap()
 }

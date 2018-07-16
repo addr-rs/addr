@@ -12,6 +12,9 @@ readme = "README.md"
 keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 
+[dependencies]
+rental = "0.5"
+
 [dependencies.psl]
 version = "0.3"
 path = "./psl"

@@ -1,7 +1,7 @@
 [package]
 name = "psl"
 description = "A native library for Mozilla's Public Suffix List"
-version = "0.3.1"
+version = "0.3.2"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr/tree/master/psl"
 documentation = "https://docs.rs/psl"
@@ -30,6 +30,9 @@ psl-lexer = { version = "0.1", path = "../lexer" }
 rspec = "1.0.0-beta.3"
 idna = "0.1"
 criterion = "0.2"
+
+[build-dependencies]
+rustc_version = "0.2"
 
 [[bench]]
 name = "list_benchmark"
