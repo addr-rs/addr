@@ -1,7 +1,5 @@
-/*
 extern crate psl;
 
-use std::str::FromStr;
 use std::fmt;
 
 use psl::{Psl, List};
@@ -23,10 +21,8 @@ pub struct DnsName<'a> {
     root: psl::Domain<'a>,
 }
 
-impl<'a> FromStr for DomainName<'a> {
-    type Err = ();
-
-    fn from_str(str: &str) -> Result<Self, Self::Err> {
+impl<'a> DomainName<'a> {
+    fn from_str(str: &'a str) -> Result<Self, ()> {
         match List::new().domain(str) {
             Some(root) => { Ok(DomainName { str, root }) }
             None => { Err(()) }
@@ -34,6 +30,7 @@ impl<'a> FromStr for DomainName<'a> {
     }
 }
 
+/*
 impl<'a> FromStr for DnsName<'a> {
     type Err = ();
 
@@ -44,6 +41,7 @@ impl<'a> FromStr for DnsName<'a> {
         }
     }
 }
+*/
 
 impl<'a> Domain<'a> for DomainName<'a> {
     fn as_str(&self) -> &'a str {
@@ -76,4 +74,3 @@ impl<'a> fmt::Display for DnsName<'a> {
         write!(f, "{}", self.str)
     }
 }
-*/
