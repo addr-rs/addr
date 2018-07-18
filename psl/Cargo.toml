@@ -1,7 +1,7 @@
 [package]
 name = "psl"
 description = "A native library for Mozilla's Public Suffix List"
-version = "0.3.4"
+version = "0.3.6"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr/tree/master/psl"
 documentation = "https://docs.rs/psl"
@@ -35,7 +35,8 @@ criterion = "0.2"
 rustc_version = "0.2"
 
 [package.metadata.docs.rs]
-features = ["docs-only"]
+rustc-args = ["--cfg",  "psl_docs_rs"]
+rustdoc-args = ["--cfg",  "psl_docs_rs"]
 
 [[bench]]
 name = "list_benchmark"
