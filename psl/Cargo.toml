@@ -34,6 +34,9 @@ criterion = "0.2"
 [build-dependencies]
 rustc_version = "0.2"
 
+[package.metadata.docs.rs]
+features = ["docs-only"]
+
 [[bench]]
 name = "list_benchmark"
 harness = false

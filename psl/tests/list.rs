@@ -45,7 +45,7 @@ fn list_behaviour() {
                         None => { panic!(format!("line {} of the test file doesn't seem to be valid", i)); },
                     };
                     let var = if let Ok(var) = env::var("PSL_TLD") { var } else { String::new() };
-                    if !var.is_empty() && !input.trim().trim_right_matches('.').ends_with(&var) {
+                    if !var.trim().is_empty() && !input.trim().trim_right_matches('.').ends_with(&var) {
                         continue;
                     }
                     let (expected_root, expected_suffix) = match test.next() {

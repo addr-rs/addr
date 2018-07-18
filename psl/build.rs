@@ -5,6 +5,11 @@ use std::env::{self, VarError};
 use rustc_version::{version, Version};
 
 fn main() {
+    if cfg!(feature = "docs-only") {
+        println!("cargo:rustc-env=PSL_TLDS=com,中国,cn,рф");
+        return;
+    }
+
     let profile = env::var("PROFILE").unwrap();
 
     let string_match = "PSL_STRING_MATCH";
