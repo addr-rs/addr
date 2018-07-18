@@ -11,6 +11,7 @@ extern crate psl_codegen;
 mod list;
 
 use core::{str, fmt};
+use core::cmp::PartialEq;
 
 #[cfg(feature = "list")]
 pub use list::List;
@@ -143,5 +144,17 @@ impl<'a> fmt::Display for Domain<'a> {
 impl Default for Type {
     fn default() -> Self {
         Type::Icann
+    }
+}
+
+impl<'a, 'b> PartialEq<&'a str> for Domain<'b> {
+    fn eq(&self, other: &&'a str) -> bool {
+        self.to_str() == *other
+    }
+}
+
+impl<'a, 'b> PartialEq<&'a str> for Suffix<'b> {
+    fn eq(&self, other: &&'a str) -> bool {
+        self.to_str() == *other
     }
 }

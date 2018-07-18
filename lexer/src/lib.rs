@@ -35,6 +35,9 @@ extern crate error_chain;
 #[cfg(feature = "remote_list")]
 extern crate native_tls;
 extern crate url;
+#[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
 
 pub mod errors;
 
@@ -199,7 +202,7 @@ impl List {
     /// Pull the list from a URL
     #[cfg(feature = "remote_list")]
     pub fn from_url<U: IntoUrl>(url: U) -> Result<List> {
-        request(url).and_then(Self::from_string)
+        request(url).and_then(|list| Self::from_str(&list))
     }
 
     /// Fetch the list from a local file
@@ -209,9 +212,8 @@ impl List {
             .and_then(|mut data| {
                 let mut res = String::new();
                 data.read_to_string(&mut res)?;
-                Ok(res)
+                Self::from_str(&res)
             })
-            .and_then(Self::from_string)
     }
 
     /// Build the list from the result of anything that implements `std::io::Read`
@@ -223,15 +225,6 @@ impl List {
         let mut res = String::new();
         reader.read_to_string(&mut res)?;
         Self::build(&res)
-    }
-
-    /// Build the list from a string
-    ///
-    /// The list doesn't always have to come from a file. You can maintain your own
-    /// list, say in a DBMS. You can then pull it at runtime and build the list from
-    /// the resulting String.
-    pub fn from_string(string: String) -> Result<List> {
-        Self::from_str(&string)
     }
 
     /// Build the list from a str
