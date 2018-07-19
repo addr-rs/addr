@@ -10,9 +10,9 @@ extern crate psl_codegen;
 
 #[cfg(feature = "list")]
 mod list;
+mod trait_impls;
 
-use core::{str, fmt};
-use core::cmp::PartialEq;
+use core::str;
 
 #[cfg(feature = "list")]
 pub use list::List;
@@ -127,35 +127,5 @@ impl<'a> Domain<'a> {
     #[inline]
     pub fn suffix(&self) -> Suffix<'a> {
         self.suffix
-    }
-}
-
-impl<'a> fmt::Display for Suffix<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(self.to_str())
-    }
-}
-
-impl<'a> fmt::Display for Domain<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(self.to_str())
-    }
-}
-
-impl Default for Type {
-    fn default() -> Self {
-        Type::Icann
-    }
-}
-
-impl<'a, 'b> PartialEq<&'a str> for Domain<'b> {
-    fn eq(&self, other: &&'a str) -> bool {
-        self.to_str() == *other
-    }
-}
-
-impl<'a, 'b> PartialEq<&'a str> for Suffix<'b> {
-    fn eq(&self, other: &&'a str) -> bool {
-        self.to_str() == *other
     }
 }
