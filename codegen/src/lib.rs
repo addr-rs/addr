@@ -27,7 +27,7 @@ fn krate() -> TokenStream {
 
 #[cfg(not(feature = "prefix"))]
 fn krate() -> TokenStream {
-    quote!(::)
+    TokenStream::new()
 }
 
 #[proc_macro_derive(Psl, attributes(psl))]
@@ -53,7 +53,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             match ::core::str::from_utf8(domain) {
                 Ok(domain) => domain.rsplit('.'),
                 Err(_) => {
-                    return #krate Info { len, typ };
+                    return info;
                 }
             }
         }
@@ -65,15 +65,13 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = quote! {
         impl #impl_generics #krate Psl for #name #ty_generics #where_clause {
-            #[allow(unused_assignments)]
             fn find(&self, domain: &[u8]) -> #krate Info {
-                let mut typ = None;
                 let mut len = 0;
+                let mut info = #krate Info { len, typ: None };
 
                 let mut labels = #labels;
 
                 let fqdn = if domain.ends_with(b".") {
-                    len += 1;
                     labels.next();
                     true
                 } else {
@@ -82,13 +80,11 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
                 #body
 
-                if fqdn && len == 2 {
-                    len = 0;
-                } else {
-                    len -= 1;
+                if fqdn && info.len > 0 {
+                    info.len += 1;
                 }
 
-                #krate Info { len, typ }
+                info
             }
         }
     };
@@ -97,7 +93,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 #[derive(Debug)]
-struct AtRoot(bool);
+struct Depth(usize);
 
 #[derive(Debug)]
 struct StringMatch(bool);
@@ -156,17 +152,28 @@ fn body(resources: Vec<Uri>, string_match: bool) -> TokenStream {
     for val in list.rules.values() {
         for suffix in val {
             let rule = suffix.rule.replace("*", "_");
-            let labels = rule.split('.').rev();
-            tree.insert(labels, suffix.typ);
+            let labels: Vec<_> = rule.split('.')
+                .map(|s| s.to_owned())
+                .rev()
+                .collect();
+            tree.insert(labels.iter(), suffix.typ);
+            if cfg!(feature = "punycode") {
+                let labels: Vec<_> = labels.into_iter().map(|label| {
+                    idna::domain_to_ascii(&label)
+                        .expect(&format!("expected: a label that can be converted to ascii, found: {}", label))
+                })
+                .collect();
+                tree.insert(labels.iter(), suffix.typ);
+            }
         }
     }
 
-    build(tree.children_with_keys(), AtRoot(true), StringMatch(string_match))
+    build(tree.children_with_keys(), Depth(0), StringMatch(string_match))
 }
 
-fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtRoot, StringMatch(string_match): StringMatch) -> TokenStream {
+fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, Depth(depth): Depth, StringMatch(string_match): StringMatch) -> TokenStream {
     if list.is_empty() {
-        if at_root {
+        if depth == 0 {
             panic!("
                 Found empty list. This implementation doesn't support empty lists.
                 If you do want one, you can easily implement the trait `psl::Psl`
@@ -182,17 +189,22 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
     let mut body = TokenStream::new();
     let mut footer = TokenStream::new();
     for (label, tree) in list {
-        let mut typ = TokenStream::new();
+        let mut info = if depth == 0 {
+            // invoke the wildcard rule
+            quote!(info.len = len;)
+        } else {
+            TokenStream::new()
+        };
         if let Some(val) = tree.value() {
             let t = match *val {
                 Type::Icann => syn::parse_str::<syn::Type>("Icann").unwrap(),
                 Type::Private => syn::parse_str::<syn::Type>("Private").unwrap(),
             };
-            typ = quote! {
-                typ = Some(#krate Type::#t);
+            info = quote! {
+                info = #krate Info { len, typ: Some(#krate Type::#t) };
             };
         }
-        let children = build(tree.children_with_keys(), AtRoot(false), StringMatch(string_match));
+        let children = build(tree.children_with_keys(), Depth(depth + 1), StringMatch(string_match));
         let pat = |label| {
             if string_match {
                 quote!(#label)
@@ -201,19 +213,20 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
                 quote!(#pat)
             }
         };
+        let plus_1 = if depth > 0 { quote!(+ 1) } else { TokenStream::new() };
         if label.starts_with('!') {
             let label = label.trim_left_matches('!');
             let pat = pat(label);
             head.append_all(quote! {
                 #pat => {
-                    #typ
+                    #info
                 }
             });
         } else if label == "_" {
             footer.append_all(quote! {
                 wild => {
-                    len += wild.len() + 1;
-                    #typ
+                    len += wild.len() #plus_1;
+                    #info
                     #children
                 }
             });
@@ -221,27 +234,25 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
             let pat = pat(label);
             body.append_all(quote! {
                 #pat => {
-                    len += #pat.len() + 1;
-                    #typ
+                    len += #pat.len() #plus_1;
+                    #info
                     #children
                 }
             });
         }
     }
 
-    let (end_of_matches, end_of_labels) = if at_root {
-        let eom = quote! {
-            val => {
-                len += val.len() + 1;
-            }
-        };
-        (eom, quote!(len += 1;))
-    } else {
-        (quote!(_ => {}), TokenStream::new())
-    };
-
     if footer.is_empty() {
-        footer.append_all(quote!(#end_of_matches));
+        let eom = if depth == 0 {
+            quote! {
+                val => {
+                    info.len = val.len();
+                }
+            }
+        } else {
+            quote!(_ => {})
+        };
+        footer.append_all(eom);
     }
 
     quote! {
@@ -253,7 +264,7 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, AtRoot(at_root): AtR
                     #footer
                 }
             }
-            None => { #end_of_labels }
+            None => {}
         }
     }
 }

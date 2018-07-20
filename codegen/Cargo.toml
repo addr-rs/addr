@@ -13,11 +13,17 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 proc-macro = true
 
 [features]
-default = ["prefix"]
+default = ["prefix", "punycode"]
 
 # Whether or not to prefix the generated types
 # from the `psl` crate with the name of the crate
 prefix = []
+
+# Add compile time punycode support
+# If you don't need punycode support, disable this
+# to reduce compile times by almost half for the 
+# official list.
+punycode = []
 
 [dependencies]
 proc-macro2 = "0.4"

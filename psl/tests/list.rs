@@ -1,7 +1,6 @@
 extern crate psl;
 extern crate psl_lexer;
 extern crate rspec;
-extern crate idna;
 
 use std::{env, mem};
 use std::path::Path;
@@ -62,12 +61,10 @@ fn list_behaviour() {
                         },
                         None => { panic!(format!("line {} of the test file doesn't seem to be valid", i)); },
                     };
-                    let is_punycode = input.contains("xn--");
-                    let domain = if is_punycode { idna::domain_to_unicode(input).0 } else { input.to_owned() };
-                    let (mut found_root, mut found_suffix) = if domain.starts_with(".") || domain.contains("..") {
+                    let (mut found_root, mut found_suffix) = if input.starts_with(".") || input.contains("..") {
                         (None, None)
                     } else {
-                        list.domain(&domain.to_lowercase())
+                        list.domain(&input.to_lowercase())
                         .map(|d| {
                             let domain = d.to_string();
                             let suffix = d.suffix().to_string();
@@ -75,10 +72,6 @@ fn list_behaviour() {
                         })
                         .unwrap_or((None, None))
                     };
-                    if is_punycode {
-                        found_root = found_root.map(|p| idna::domain_to_ascii(&p).unwrap());
-                        found_suffix = found_suffix.map(|p| idna::domain_to_ascii(&p).unwrap());
-                    }
                     ctx.when(msg(format!("input is `{}`", input)), |ctx| {
                         let full_domain = expected_root.is_some();
 

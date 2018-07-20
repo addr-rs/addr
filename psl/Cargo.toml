@@ -10,8 +10,9 @@ keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 
 [features]
-default = ["list"]
+default = ["list", "punycode"]
 list = ["psl-codegen", "serde"]
+punycode = ["list", "psl-codegen/punycode"]
 dynamic = [ ]
 
 [dependencies.serde]

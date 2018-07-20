@@ -51,12 +51,12 @@ pub trait Psl {
     ///
     /// # Assumptions
     ///
-    /// *NB:* `domain` must be unicode and lowercase
+    /// *NB:* `domain` must be a valid domain name in lowercase
     fn find(&self, domain: &[u8]) -> Info;
 
     /// Get the public suffix of the domain
     /// 
-    /// *NB:* `domain` must be unicode and lowercase
+    /// *NB:* `domain` must be a valid domain name in lowercase
     #[inline]
     fn suffix<'a>(&self, domain: &'a str) -> Option<Suffix<'a>> {
         let domain = domain.as_bytes();
@@ -71,7 +71,7 @@ pub trait Psl {
 
     /// Get the registrable domain
     /// 
-    /// *NB:* `domain` must be unicode and lowercase
+    /// *NB:* `domain` must be a valid domain name in lowercase
     #[inline]
     fn domain<'a>(&self, domain: &'a str) -> Option<Domain<'a>> {
         let suffix = self.suffix(domain)?;

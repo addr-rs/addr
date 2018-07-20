@@ -64,26 +64,16 @@ use std::str::FromStr;
 use std::cmp::PartialEq;
 
 use psl::{Psl, List};
-use regex::RegexSet;
+use regex::{Regex, RegexSet};
 use errors::ErrorKind;
-use idna::{domain_to_unicode, uts46};
 
 pub use errors::{Result, Error};
 
 lazy_static! {
     // Regex for matching domain name labels
-    static ref LABEL: RegexSet = {
-        let exprs = vec![
-            // can be any combination of alphanumeric characters
-            r"^[[:alnum:]]+$",
-            // or it can start with an alphanumeric character
-            // then optionally be followed by any combination of
-            // alphanumeric characters and dashes before finally
-            // ending with an alphanumeric character
-            r"^[[:alnum:]]+[[:alnum:]-]*[[:alnum:]]+$",
-        ];
-        RegexSet::new(exprs).unwrap()
-    };
+    static ref DOMAIN: Regex = Regex::new(
+        r"(?i)^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$"
+    ).unwrap();
 
     // Regex for matching the local-part of an
     // email address
@@ -165,12 +155,13 @@ impl FromStr for DomainName {
     fn from_str(domain: &str) -> Result<Self> {
         use inner::Domain;
 
-        if !Self::has_valid_syntax(domain) {
+        let input = domain.to_lowercase();
+        if !Self::has_valid_syntax(&input) {
             return Err(ErrorKind::InvalidDomain(domain.into()).into());
         }
-        let input = to_unicode(domain.trim_right_matches('.'))?;
-        let inner = Domain::try_new_or_drop(input + ".", |full| {
-            match List::new().domain(&full) {
+
+        let inner = Domain::try_new_or_drop(input, |full| {
+            match List.domain(&full) {
                 Some(root) => { Ok(root) }
                 None => { Err(Error::from(ErrorKind::InvalidDomain(domain.into()))) }
             }
@@ -186,9 +177,7 @@ impl FromStr for DnsName {
     fn from_str(host: &str) -> Result<Self> {
         use inner::Dns;
 
-        let non_fqdn = if host.ends_with('.') { &host[..host.len()-1] } else { host };
-        let domain = to_unicode(non_fqdn)?;
-        let inner = Dns::try_new_or_drop(domain + ".", |full| {
+        let inner = Dns::try_new_or_drop(host.to_owned(), |full| {
             match List::new().domain(&full) {
                 Some(root) => {
                     if !DomainName::has_valid_syntax(root.to_str()) {
@@ -280,29 +269,14 @@ impl DomainName {
     // http://blog.sacaluta.com/2011/12/dns-domain-names-253-or-255-bytesoctets.html
     // https://blogs.msdn.microsoft.com/oldnewthing/20120412-00/?p=7873/
     fn has_valid_syntax(domain: &str) -> bool {
-        // we are explicitly checking for this here before calling `domain_to_ascii`
-        // because `domain_to_ascii` strips of leading dots so we won't be able to
-        // check for this later
-        if domain.starts_with('.') { return false; }
-        // let's convert the domain to ascii early on so we can validate
-        // internationalised domain names as well
-        let domain = match to_ascii(domain) {
-            Ok(domain) => { domain }
-            Err(_) => { return false; }
-        };
-        let mut labels: Vec<&str> = domain.split('.').collect();
-        // strip of the first dot from a domain to support fully qualified domain names
-        if domain.ends_with(".") { labels.pop(); }
         // a domain must not have more than 127 labels
-        if labels.len() > 127 { return false; }
-        labels.reverse();
-        for (i, label) in labels.iter().enumerate() {
-            // the tld must not be a number
-            if i == 0 && label.parse::<f64>().is_ok() { return false; }
-            // any label must only contain allowed characters
-            if !LABEL.is_match(label) { return false; }
+        if domain.rsplit('.').len() > 127 { return false; }
+        match idna::domain_to_ascii(domain) {
+            Ok(punycode) => {
+                punycode.len() < 254 && DOMAIN.is_match(&punycode)
+            }
+            Err(_) => false,
         }
-        true
     }
 }
 
@@ -352,23 +326,6 @@ impl Email {
     pub fn host(&self) -> &Host {
         &self.host
     }
-}
-
-fn to_ascii(domain: &str) -> Result<String> {
-    let result = uts46::to_ascii(domain, uts46::Flags {
-        use_std3_ascii_rules: false,
-        transitional_processing: true,
-        verify_dns_length: true,
-    });
-    result.map_err(|error| ErrorKind::Uts46(error).into())
-}
-
-fn to_unicode(input: &str) -> Result<String> {
-    let (domain, res) = domain_to_unicode(input);
-    if let Err(errors) = res {
-        return Err(ErrorKind::Uts46(errors).into());
-    }
-    Ok(domain)
 }
 
 impl fmt::Display for DomainName {
