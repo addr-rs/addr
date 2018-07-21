@@ -7,4 +7,4 @@ rust:
 - nightly
 
 script:
-- cd psl && travis_wait 30 cargo test --release
+- cd psl && travis_wait 70 cargo test --release
