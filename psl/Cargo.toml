@@ -1,7 +1,7 @@
 [package]
 name = "psl"
 description = "A native library for Mozilla's Public Suffix List"
-version = "0.3.6"
+version = "0.4.0"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr/tree/master/psl"
 documentation = "https://docs.rs/psl"
@@ -10,10 +10,8 @@ keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 
 [features]
-default = ["list", "punycode"]
+default = ["list"]
 list = ["psl-codegen", "serde"]
-punycode = ["list", "psl-codegen/punycode"]
-dynamic = [ ]
 
 [dependencies.serde]
 version = "1.0"
@@ -21,7 +19,7 @@ default-features = false
 optional = true
 
 [dependencies.psl-codegen]
-version = "0.3"
+version = "0.4"
 default-features = false
 path = "../codegen"
 optional = true
@@ -29,16 +27,6 @@ optional = true
 [dev-dependencies]
 psl-lexer = { version = "0.2", path = "../lexer" }
 rspec = "=1.0.0-beta.4"
-idna = "0.1"
-criterion = "0.2"
 
 [build-dependencies]
 rustc_version = "0.2"
-
-[package.metadata.docs.rs]
-rustc-args = ["--cfg",  "psl_docs_rs"]
-rustdoc-args = ["--cfg",  "psl_docs_rs"]
-
-[[bench]]
-name = "list_benchmark"
-harness = false

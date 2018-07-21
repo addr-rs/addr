@@ -1,34 +1,16 @@
 extern crate rustc_version;
 
-use std::env::{self, VarError};
+use std::env;
 
 use rustc_version::{version, Version};
 
 fn main() {
-    if cfg!(psl_docs_rs) {
-        println!("cargo:rustc-env=PSL_TLDS=com,中国,cn,рф");
-        return;
-    }
-
     let profile = env::var("PROFILE").unwrap();
-
     let string_match = "PSL_STRING_MATCH";
+    let string_match_not_set = env::var(string_match).is_err();
+    println!("cargo:rerun-if-env-changed={}", string_match);
 
-    if version().unwrap() < Version::parse("1.27.0").unwrap() || profile == "debug" {
+    if version().unwrap() < Version::parse("1.27.0").unwrap() || (profile == "debug" && string_match_not_set) {
         println!("cargo:rustc-env={}=1", string_match);
-    }
-
-    let not_set: Vec<_> = vec!["PSL_TLD", "PSL_TLDS", string_match]
-        .into_iter()
-        .map(|key| { println!("cargo:rerun-if-env-changed={}", key); key })
-        .filter(|x| *x != string_match)
-        .map(|x| env::var(x))
-        .filter(|x| *x == Err(VarError::NotPresent))
-        .collect();
-
-    if not_set.len() == 2 {
-        if profile == "debug" {
-            println!("cargo:rustc-env=PSL_TLD=com");
-        }
     }
 }

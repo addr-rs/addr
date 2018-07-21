@@ -1,3 +1,4 @@
+sudo: false
 language: rust
 
 rust:
@@ -7,4 +8,7 @@ rust:
 - nightly
 
 script:
-- cd psl && travis_wait 70 cargo test --release
+- cargo test --package psl
+
+cache:
+  cargo: true

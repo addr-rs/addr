@@ -1,6 +1,5 @@
 #![no_std]
 #![forbid(unsafe_code)]
-#![cfg_attr(feature = "dynamic", crate_type = "dylib")]
 
 #[cfg(feature = "list")]
 extern crate serde;

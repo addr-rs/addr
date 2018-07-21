@@ -42,22 +42,20 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         false
     };
 
-    let (labels, iter) = if string_match {
-        let labels = quote! {
+    let labels = if string_match {
+        quote! {
             match ::core::str::from_utf8(domain) {
                 Ok(domain) => domain.rsplit('.'),
                 Err(_) => {
                     return info;
                 }
             }
-        };
-        (labels, quote!(str))
+        }
     } else {
-        let labels = quote!(domain.rsplit(|x| *x == b'.'));
-        (labels, quote!([u8]))
+        quote!(domain.rsplit(|x| *x == b'.'))
     };
 
-    let body = body(resources, string_match);
+    let funcs = process(resources, string_match);
 
     let expanded = quote! {
         mod __psl_impl {
@@ -76,7 +74,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         false
                     };
 
-                    info = lookup(labels, info.len, info);
+                    info = lookup(labels, info);
 
                     if fqdn && info.len > 0 {
                         info.len += 1;
@@ -86,26 +84,17 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }
             }
 
-            #[inline]
-            fn lookup<'a, T>(mut labels: T, mut len: usize, mut info: Info) -> Info
-                where T: Iterator<Item=&'a #iter>
-            {
-                #body
-                info
-            }
+            #funcs
         }
     };
 
     expanded.into()
 }
 
-#[derive(Debug)]
-struct Depth(usize);
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct StringMatch(bool);
 
-fn body(resources: Vec<Uri>, string_match: bool) -> TokenStream {
+fn process(resources: Vec<Uri>, string_match: bool) -> TokenStream {
     use self::Uri::*;
 
     let mut list = if resources.is_empty() {
@@ -164,42 +153,109 @@ fn body(resources: Vec<Uri>, string_match: bool) -> TokenStream {
                 .rev()
                 .collect();
             tree.insert(labels.iter(), suffix.typ);
-            if cfg!(feature = "punycode") {
-                let labels: Vec<_> = labels.into_iter().map(|label| {
-                    idna::domain_to_ascii(&label)
-                        .expect(&format!("expected: a label that can be converted to ascii, found: {}", label))
-                })
-                .collect();
-                tree.insert(labels.iter(), suffix.typ);
-            }
+            let labels: Vec<_> = labels.into_iter().map(|label| {
+                idna::domain_to_ascii(&label)
+                    .expect(&format!("expected: a label that can be converted to ascii, found: {}", label))
+            })
+            .collect();
+            tree.insert(labels.iter(), suffix.typ);
         }
     }
 
-    build(tree.children_with_keys(), Depth(0), StringMatch(string_match))
+    funcs(tree.children_with_keys(), StringMatch(string_match))
 }
 
-fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, Depth(depth): Depth, StringMatch(string_match): StringMatch) -> TokenStream {
+fn funcs(
+    list: Vec<(&String, &SequenceTrie<String, Type>)>,
+    StringMatch(string_match): StringMatch,
+) -> TokenStream {
     if list.is_empty() {
-        if depth == 0 {
+        if !cfg!(test) {
             panic!("
                 Found empty list. This implementation doesn't support empty lists.
                 If you do want one, you can easily implement the trait `psl::Psl`
                 by merely putting `None` in the body.
             ");
         }
-        return TokenStream::new();
     }
 
+    let mut body = TokenStream::new();
+    let mut funcs = TokenStream::new();
+    let iter = if string_match { quote!(str) } else { quote!([u8]) };
+
+    for (i, (label, tree)) in list.into_iter().enumerate() {
+        let fname = syn::parse_str::<syn::Ident>(&format!("lookup{}", i)).unwrap();
+        let pat = pat(label, StringMatch(string_match));
+        body.append_all(quote!{
+            #pat => #fname(labels, info),
+        });
+        let children = build(tree.children_with_keys(), StringMatch(string_match));
+        let (labels, resize_len) = if children.is_empty() {
+            let resize_len = quote! {
+                info.len = #pat.len();
+            };
+            (quote!(_), resize_len)
+        } else {
+            let resize_len = quote! {
+                let mut len = #pat.len();
+                info.len = len;
+            };
+            (quote!(mut labels), resize_len)
+        };
+        funcs.append_all(quote!{
+            #[inline]
+            fn #fname<'a, T>(#labels: T, mut info: Info) -> Info
+                where T: Iterator<Item=&'a #iter>
+                {
+                    #resize_len
+                    #children
+                    info
+                }
+        });
+    }
+
+    let lookup = quote! {
+        #[inline]
+        fn lookup<'a, T>(mut labels: T, mut info: Info) -> Info
+            where T: Iterator<Item=&'a #iter>
+        {
+            match labels.next() {
+                Some(label) => {
+                    match label {
+                        #body
+                        val => {
+                            info.len = val.len();
+                            info
+                        }
+                    }
+                }
+                None => info,
+            }
+        }
+    };
+
+    quote![#lookup #funcs]
+}
+
+fn pat(label: &str, StringMatch(string_match): StringMatch) -> TokenStream {
+    if string_match {
+        quote!(#label)
+    } else {
+        let pat = array_expr(label);
+        quote!(#pat)
+    }
+}
+
+fn build(
+    list: Vec<(&String, &SequenceTrie<String, Type>)>,
+    string_match: StringMatch,
+) -> TokenStream {
     let mut head = TokenStream::new();
     let mut body = TokenStream::new();
     let mut footer = TokenStream::new();
+
     for (label, tree) in list {
-        let mut info = if depth == 0 {
-            // invoke the wildcard rule
-            quote!(info.len = len;)
-        } else {
-            TokenStream::new()
-        };
+        let mut info = TokenStream::new();
         if let Some(val) = tree.value() {
             let t = match *val {
                 Type::Icann => syn::parse_str::<syn::Type>("Icann").unwrap(),
@@ -209,19 +265,10 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, Depth(depth): Depth,
                 info = Info { len, typ: Some(Type::#t) };
             };
         }
-        let children = build(tree.children_with_keys(), Depth(depth + 1), StringMatch(string_match));
-        let pat = |label| {
-            if string_match {
-                quote!(#label)
-            } else {
-                let pat = array_expr(label);
-                quote!(#pat)
-            }
-        };
-        let plus_1 = if depth > 0 { quote!(+ 1) } else { TokenStream::new() };
+        let children = build(tree.children_with_keys(), string_match);
         if label.starts_with('!') {
             let label = label.trim_left_matches('!');
-            let pat = pat(label);
+            let pat = pat(label, string_match);
             head.append_all(quote! {
                 #pat => {
                     #info
@@ -230,16 +277,16 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, Depth(depth): Depth,
         } else if label == "_" {
             footer.append_all(quote! {
                 wild => {
-                    len += wild.len() #plus_1;
+                    len += wild.len() + 1;
                     #info
                     #children
                 }
             });
         } else {
-            let pat = pat(label);
+            let pat = pat(label, string_match);
             body.append_all(quote! {
                 #pat => {
-                    len += #pat.len() #plus_1;
+                    len += #pat.len() + 1;
                     #info
                     #children
                 }
@@ -247,17 +294,12 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, Depth(depth): Depth,
         }
     }
 
+    if head.is_empty() && body.is_empty() && footer.is_empty() {
+        return TokenStream::new();
+    }
+
     if footer.is_empty() {
-        let eom = if depth == 0 {
-            quote! {
-                val => {
-                    info.len = val.len();
-                }
-            }
-        } else {
-            quote!(_ => {})
-        };
-        footer.append_all(eom);
+        footer.append_all(quote!(_ => {}));
     }
 
     quote! {

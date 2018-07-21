@@ -12,11 +12,6 @@ readme = "README.md"
 keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 
-[features]
-default = ["list", "punycode"]
-list = ["psl/list"]
-punycode = ["psl/punycode"]
-
 [dependencies]
 rental = "0.5"
 error-chain = "0.12"
@@ -25,13 +20,13 @@ lazy_static = "1.0"
 idna = "0.1"
 
 [dependencies.psl]
-version = "0.3"
-default-features = false
+version = "0.4"
 path = "./psl"
 
 [dev-dependencies]
 rspec = "=1.0.0-beta.4"
+criterion = "0.2"
 
-[package.metadata.docs.rs]
-rustc-args = ["--cfg",  "addr_docs_rs"]
-rustdoc-args = ["--cfg",  "addr_docs_rs"]
+[[bench]]
+name = "list_benchmark"
+harness = false
