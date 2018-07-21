@@ -30,29 +30,31 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let Attrs { resources } = attrs(&input.attrs);
 
+    let krate = if cfg!(feature = "prefix") {
+        quote!(psl::)
+    } else {
+        TokenStream::new()
+    };
+
     let string_match = if let Ok(val) = env::var("PSL_STRING_MATCH") {
         if val == "1" { true } else { false }
     } else {
         false
     };
 
-    let krate = if cfg!(feature = "prefix") {
-        quote!(::psl::)
-    } else {
-        TokenStream::new()
-    };
-
-    let labels = if string_match {
-        quote! {
+    let (labels, iter) = if string_match {
+        let labels = quote! {
             match ::core::str::from_utf8(domain) {
                 Ok(domain) => domain.rsplit('.'),
                 Err(_) => {
                     return info;
                 }
             }
-        }
+        };
+        (labels, quote!(str))
     } else {
-        quote!(domain.rsplit(|x| *x == b'.'))
+        let labels = quote!(domain.rsplit(|x| *x == b'.'));
+        (labels, quote!([u8]))
     };
 
     let body = body(resources, string_match);
@@ -63,8 +65,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
             impl #impl_generics Psl for super::#name #ty_generics #where_clause {
                 fn find(&self, domain: &[u8]) -> Info {
-                    let mut len = 0;
-                    let mut info = Info { len, typ: None };
+                    let mut info = Info { len: 0, typ: None };
 
                     let mut labels = #labels;
 
@@ -75,7 +76,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         false
                     };
 
-                    #body
+                    info = lookup(labels, info.len, info);
 
                     if fqdn && info.len > 0 {
                         info.len += 1;
@@ -83,6 +84,12 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
                     info
                 }
+            }
+
+            #[inline]
+            fn lookup<'a>(mut labels: impl Iterator<Item=&'a #iter>, mut len: usize, mut info: Info) -> Info {
+                #body
+                info
             }
         }
     };
