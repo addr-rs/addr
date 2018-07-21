@@ -87,7 +87,9 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
 
             #[inline]
-            fn lookup<'a>(mut labels: impl Iterator<Item=&'a #iter>, mut len: usize, mut info: Info) -> Info {
+            fn lookup<'a, T>(mut labels: T, mut len: usize, mut info: Info) -> Info
+                where T: Iterator<Item=&'a #iter>
+            {
                 #body
                 info
             }
