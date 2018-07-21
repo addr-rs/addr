@@ -1,4 +1,4 @@
-use {Domain, Suffix, Psl, Type, Info};
+use {Domain, Suffix, Psl};
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::de::{Error, Unexpected};
 

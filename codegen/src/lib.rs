@@ -20,16 +20,6 @@ use syn::{DeriveInput, Attribute, Meta, NestedMeta, Lit};
 use quote::TokenStreamExt;
 use sequence_trie::SequenceTrie;
 
-#[cfg(feature = "prefix")]
-fn krate() -> TokenStream {
-    quote!(::psl::)
-}
-
-#[cfg(not(feature = "prefix"))]
-fn krate() -> TokenStream {
-    TokenStream::new()
-}
-
 #[proc_macro_derive(Psl, attributes(psl))]
 pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input: DeriveInput = syn::parse(input).unwrap();
@@ -46,7 +36,11 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         false
     };
 
-    let krate = krate();
+    let krate = if cfg!(feature = "prefix") {
+        quote!(::psl::)
+    } else {
+        TokenStream::new()
+    };
 
     let labels = if string_match {
         quote! {
@@ -64,27 +58,31 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let body = body(resources, string_match);
 
     let expanded = quote! {
-        impl #impl_generics #krate Psl for #name #ty_generics #where_clause {
-            fn find(&self, domain: &[u8]) -> #krate Info {
-                let mut len = 0;
-                let mut info = #krate Info { len, typ: None };
+        mod __psl_impl {
+            use #krate {Psl, Type, Info};
 
-                let mut labels = #labels;
+            impl #impl_generics Psl for super::#name #ty_generics #where_clause {
+                fn find(&self, domain: &[u8]) -> Info {
+                    let mut len = 0;
+                    let mut info = Info { len, typ: None };
 
-                let fqdn = if domain.ends_with(b".") {
-                    labels.next();
-                    true
-                } else {
-                    false
-                };
+                    let mut labels = #labels;
 
-                #body
+                    let fqdn = if domain.ends_with(b".") {
+                        labels.next();
+                        true
+                    } else {
+                        false
+                    };
 
-                if fqdn && info.len > 0 {
-                    info.len += 1;
+                    #body
+
+                    if fqdn && info.len > 0 {
+                        info.len += 1;
+                    }
+
+                    info
                 }
-
-                info
             }
         }
     };
@@ -183,8 +181,6 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, Depth(depth): Depth,
         return TokenStream::new();
     }
 
-    let krate = krate();
-
     let mut head = TokenStream::new();
     let mut body = TokenStream::new();
     let mut footer = TokenStream::new();
@@ -201,7 +197,7 @@ fn build(list: Vec<(&String, &SequenceTrie<String, Type>)>, Depth(depth): Depth,
                 Type::Private => syn::parse_str::<syn::Type>("Private").unwrap(),
             };
             info = quote! {
-                info = #krate Info { len, typ: Some(#krate Type::#t) };
+                info = Info { len, typ: Some(Type::#t) };
             };
         }
         let children = build(tree.children_with_keys(), Depth(depth + 1), StringMatch(string_match));
