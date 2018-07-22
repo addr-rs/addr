@@ -220,7 +220,7 @@ fn funcs(
         };
     }
 
-    let lookup = quote! {
+    funcs.append_all(quote! {
         #[inline]
         fn lookup<'a, T>(mut labels: T, mut info: Info) -> Info
             where T: Iterator<Item=&'a #iter>
@@ -238,9 +238,9 @@ fn funcs(
                 None => info,
             }
         }
-    };
+    });
 
-    quote![#lookup #funcs]
+    funcs
 }
 
 fn pat(label: &str, StringMatch(string_match): StringMatch) -> TokenStream {
