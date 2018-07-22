@@ -167,18 +167,27 @@ fn process(resources: Vec<Uri>, string_match: bool, funcs: &mut TokenStream) -> 
     let mut tree = SequenceTrie::new();
     for val in list.rules.values() {
         for suffix in val {
-            let rule = suffix.rule.replace("*", "_");
-            let labels: Vec<_> = rule.split('.')
-                .map(|s| s.to_owned())
-                .rev()
-                .collect();
-            tree.insert(labels.iter(), suffix.typ);
-            let labels: Vec<_> = labels.into_iter().map(|label| {
-                idna::domain_to_ascii(&label)
-                    .expect(&format!("expected: a label that can be converted to ascii, found: {}", label))
-            })
-            .collect();
-            tree.insert(labels.iter(), suffix.typ);
+            let mut unicode = Vec::new();
+            let mut punycode = Vec::new();
+            let mut ulen = 0;
+            let mut plen = 0;
+            for (i, u) in suffix.rule.split('.').rev().enumerate() {
+                let label = u.replace("*", "_");
+                let p = idna::domain_to_ascii(&label)
+                    .expect(&format!("expected: a label that can be converted to ascii, found: {}", label));
+                if !u.starts_with('!') && u != "*" {
+                    ulen += u.len();
+                    plen += p.len();
+                    if i > 0 {
+                        ulen += 1;
+                        plen += 1;
+                    }
+                }
+                unicode.push((label, ulen));
+                punycode.push((p, plen));
+            }
+            tree.insert(unicode.iter(), suffix.typ);
+            tree.insert(punycode.iter(), suffix.typ);
         }
     }
 
@@ -188,34 +197,34 @@ fn process(resources: Vec<Uri>, string_match: bool, funcs: &mut TokenStream) -> 
 #[derive(Debug, Clone)]
 struct Func {
     name: syn::Ident,
-    pat: TokenStream,
     iter: TokenStream,
     wild: TokenStream,
+    len: TokenStream,
 }
 
 impl Func {
-    fn new(name: syn::Ident, pat: TokenStream, iter: TokenStream) -> Self {
-        Func { name, pat, iter, wild: TokenStream::new() }
+    fn new(name: syn::Ident, iter: TokenStream, len: TokenStream) -> Self {
+        Func { name, len, iter, wild: TokenStream::new() }
     }
 
     fn root(self) -> TokenStream {
-        let Func { name, pat, wild, .. } = self;
+        let Func { name, wild, len, .. } = self;
         quote!{
             #[inline]
             fn #name(mut info: Info #wild) -> Info {
-                info.len = #pat.len();
+                info.len = #len;
                 info
             }
         }
     }
 
     fn root_with_typ(self, typ: TokenStream) -> TokenStream {
-        let Func { name, pat, wild, .. } = self;
+        let Func { name, wild, len, .. } = self;
         quote!{
             #[inline]
             fn #name(#wild) -> Info {
                 Info {
-                    len: #pat.len(),
+                    len: #len,
                     typ: Some(Type::#typ),
                 }
             }
@@ -223,13 +232,13 @@ impl Func {
     }
 
     fn nested_root(self, body: TokenStream) -> TokenStream {
-        let Func { name, pat, iter, wild } = self;
+        let Func { name, iter, wild, len,  .. } = self;
         quote!{
             #[inline]
-            fn #name<'a, T>(info: Info, #wild mut labels: T) -> Info
+            fn #name<'a, T>(mut info: Info, #wild mut labels: T) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
-                let len = #pat.len();
+                info.len = #len;
                 match labels.next() {
                     Some(label) => {
                         match label {
@@ -243,15 +252,14 @@ impl Func {
     }
 
     fn nested_root_with_typ(self, typ: TokenStream, body: TokenStream) -> TokenStream {
-        let Func { name, pat, iter, wild } = self;
+        let Func { name, iter, wild, len } = self;
         quote!{
             #[inline]
             fn #name<'a, T>(#wild mut labels: T) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
-                let len = #pat.len();
                 let info = Info {
-                    len,
+                    len: #len,
                     typ: Some(Type::#typ),
                 };
                 match labels.next() {
@@ -267,12 +275,12 @@ impl Func {
     }
 
     fn leaf(self, typ: TokenStream) -> TokenStream {
-        let Func { name, pat, wild, .. } = self;
+        let Func { name, wild, len, .. } = self;
         quote!{
             #[inline]
-            fn #name(#wild len: usize) -> Info {
+            fn #name(#wild) -> Info {
                 Info {
-                    len: len + 1 + #pat.len(),
+                    len: #len,
                     typ: Some(Type::#typ),
                 }
             }
@@ -280,12 +288,12 @@ impl Func {
     }
 
     fn bang_leaf(self, typ: TokenStream) -> TokenStream {
-        let Func { name, wild, .. } = self;
+        let Func { name, wild, len, .. } = self;
         quote!{
             #[inline]
-            fn #name(#wild len: usize) -> Info {
+            fn #name(#wild) -> Info {
                 Info {
-                    len,
+                    len: #len,
                     typ: Some(Type::#typ),
                 }
             }
@@ -293,13 +301,12 @@ impl Func {
     }
 
     fn inner(self, body: TokenStream) -> TokenStream {
-        let Func { name, pat, iter, wild } = self;
+        let Func { name, iter, wild, .. } = self;
         quote!{
             #[inline]
-            fn #name<'a, T>(info: Info, #wild mut labels: T, mut len: usize) -> Info
+            fn #name<'a, T>(info: Info, #wild mut labels: T) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
-                len += 1 + #pat.len();
                 match labels.next() {
                     Some(label) => {
                         match label {
@@ -313,15 +320,14 @@ impl Func {
     }
 
     fn inner_with_typ(self, typ: TokenStream, body: TokenStream) -> TokenStream {
-        let Func { name, pat, iter, wild } = self;
+        let Func { name, iter, wild, len } = self;
         quote!{
             #[inline]
-            fn #name<'a, T>(#wild mut labels: T, mut len: usize) -> Info
+            fn #name<'a, T>(#wild mut labels: T) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
-                len += 1 + #pat.len();
                 let info = Info {
-                    len,
+                    len: #len,
                     typ: Some(Type::#typ),
                 };
                 match labels.next() {
@@ -357,7 +363,7 @@ fn pat(label: &str, StringMatch(string_match): StringMatch) -> TokenStream {
 
 fn build(
     fname: &str,
-    list: Vec<(&String, &SequenceTrie<String, Type>)>,
+    list: Vec<(&(String, usize), &SequenceTrie<(String, usize), Type>)>,
     StringMatch(string_match): StringMatch,
     Depth(depth): Depth,
     funcs: &mut TokenStream,
@@ -378,7 +384,7 @@ fn build(
     let mut body = TokenStream::new();
     let mut footer = TokenStream::new();
 
-    for (i, (label, tree)) in list.into_iter().enumerate() {
+    for (i, ((label, len), tree)) in list.into_iter().enumerate() {
         let typ = match tree.value() {
             Some(val) => {
                 let typ = match *val {
@@ -390,23 +396,23 @@ fn build(
             None => TokenStream::new(),
         };
 
-        let name = if fname == "lookup" { format!("lookup{}", i) } else { format!("{}_{}", fname, i) };
+        let name = format!("{}_{}", fname, i);
         let fident = ident(&name);
         let children = build(&name, tree.children_with_keys(), StringMatch(string_match), Depth(depth + 1), funcs);
         let pat = pat(label, StringMatch(string_match));
-        let mut func = Func::new(fident.clone(), pat.clone(), iter.clone());
+        let mut func = Func::new(fident.clone(), iter.clone(), quote!(#len));
 
         // Exception rules
         if label.starts_with('!') {
             if !children.is_empty() {
-                panic!("an exclamation mark must be at the end of an exception rule")
+                panic!("an exclamation mark must be at the end of an exception rule: {}", label)
             }
             funcs.append_all(func.bang_leaf(typ));
             if depth == 0 {
-                panic!("an exception rule is an expected in TLD position");
+                panic!("an exception rule is an expected in TLD position: {}", label);
             } else {
                 head.append_all(quote! {
-                    #pat => #fident(len),
+                    #pat => #fident(),
                 });
             }
         }
@@ -414,6 +420,7 @@ fn build(
         // Wildcard rules
         else if label == "_" {
             if depth == 0 {
+                func.len = quote!(#len + wild.len());
                 if children.is_empty() {
                     if typ.is_empty() {
                         func.wild = quote!(, wild: &#iter);
@@ -446,24 +453,25 @@ fn build(
             }
             
             else {
+                func.len = quote!(#len + 1 + wild.len());
                 if children.is_empty() {
                     func.wild = quote!(wild: &#iter,);
                     funcs.append_all(func.leaf(typ));
                     footer.append_all(quote!{
-                        wild => #fident(wild, len),
+                        wild => #fident(wild),
                     });
                 } else {
                     if typ.is_empty() {
                         func.wild = quote!(wild: &#iter,);
                         funcs.append_all(func.inner(children));
                         footer.append_all(quote!{
-                            wild => #fident(info, wild, labels, len),
+                            wild => #fident(info, wild, labels),
                         });
                     } else {
                         func.wild = quote!(wild: &#iter,);
                         funcs.append_all(func.inner_with_typ(typ, children));
                         footer.append_all(quote!{
-                            wild => #fident(wild, labels, len),
+                            wild => #fident(wild, labels),
                         });
                     }
                 }
@@ -506,7 +514,7 @@ fn build(
                 if children.is_empty() {
                     funcs.append_all(func.leaf(typ));
                     body.append_all(quote!{
-                        #pat => #fident(len),
+                        #pat => #fident(),
                     });
                 }
                 
@@ -514,12 +522,12 @@ fn build(
                     if typ.is_empty() {
                         funcs.append_all(func.inner(children));
                         body.append_all(quote!{
-                            #pat => #fident(info, labels, len),
+                            #pat => #fident(info, labels),
                         });
                     } else {
                         funcs.append_all(func.inner_with_typ(typ, children));
                         body.append_all(quote!{
-                            #pat => #fident(labels, len),
+                            #pat => #fident(labels),
                         });
                     }
                 }
