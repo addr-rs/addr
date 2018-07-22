@@ -382,8 +382,8 @@ fn build(
         let typ = match tree.value() {
             Some(val) => {
                 let typ = match *val {
-                    Type::Icann => syn::parse_str::<syn::Type>("Icann").unwrap(),
-                    Type::Private => syn::parse_str::<syn::Type>("Private").unwrap(),
+                    Type::Icann => quote!(Icann),
+                    Type::Private => quote!(Private),
                 };
                 quote!(#typ)
             }
