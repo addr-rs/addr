@@ -165,6 +165,16 @@ fn process(resources: Vec<Uri>, string_match: bool) -> TokenStream {
     funcs(tree.children_with_keys(), StringMatch(string_match))
 }
 
+fn leaf_func(fname: syn::Ident, pat: TokenStream) -> TokenStream {
+    quote!{
+        #[inline]
+        fn #fname(mut info: Info) -> Info {
+            info.len = #pat.len();
+            info
+        }
+    }
+}
+
 fn funcs(
     list: Vec<(&String, &SequenceTrie<String, Type>)>,
     StringMatch(string_match): StringMatch,
@@ -186,32 +196,28 @@ fn funcs(
     for (i, (label, tree)) in list.into_iter().enumerate() {
         let fname = syn::parse_str::<syn::Ident>(&format!("lookup{}", i)).unwrap();
         let pat = pat(label, StringMatch(string_match));
-        body.append_all(quote!{
-            #pat => #fname(labels, info),
-        });
         let children = build(tree.children_with_keys(), StringMatch(string_match));
-        let (labels, resize_len) = if children.is_empty() {
-            let resize_len = quote! {
-                info.len = #pat.len();
-            };
-            (quote!(_), resize_len)
+        if children.is_empty() {
+            body.append_all(quote!{
+                #pat => #fname(info),
+            });
+            funcs.append_all(leaf_func(fname, pat));
         } else {
-            let resize_len = quote! {
-                let mut len = #pat.len();
-                info.len = len;
-            };
-            (quote!(mut labels), resize_len)
-        };
-        funcs.append_all(quote!{
-            #[inline]
-            fn #fname<'a, T>(#labels: T, mut info: Info) -> Info
-                where T: Iterator<Item=&'a #iter>
+            body.append_all(quote!{
+                #pat => #fname(labels, info),
+            });
+            funcs.append_all(quote!{
+                #[inline]
+                fn #fname<'a, T>(mut labels: T, mut info: Info) -> Info
+                    where T: Iterator<Item=&'a #iter>
                 {
-                    #resize_len
+                    let mut len = #pat.len();
+                    info.len = len;
                     #children
                     info
                 }
-        });
+            });
+        };
     }
 
     let lookup = quote! {
