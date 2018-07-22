@@ -270,7 +270,7 @@ impl DomainName {
     // https://blogs.msdn.microsoft.com/oldnewthing/20120412-00/?p=7873/
     fn has_valid_syntax(domain: &str) -> bool {
         // a domain must not have more than 127 labels
-        if domain.rsplit('.').len() > 127 { return false; }
+        if domain.rsplit('.').count() > 127 { return false; }
         match idna::domain_to_ascii(domain) {
             Ok(punycode) => {
                 punycode.len() < 254 && DOMAIN.is_match(&punycode)

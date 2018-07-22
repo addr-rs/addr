@@ -42,20 +42,23 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         false
     };
 
-    let labels = if string_match {
-        quote! {
+    let (labels, iter) = if string_match {
+        let labels = quote! {
             match ::core::str::from_utf8(domain) {
                 Ok(domain) => domain.rsplit('.'),
                 Err(_) => {
                     return info;
                 }
             }
-        }
+        };
+        (labels, quote!(str))
     } else {
-        quote!(domain.rsplit(|x| *x == b'.'))
+        let labels = quote!(domain.rsplit(|x| *x == b'.'));
+        (labels, quote!([u8]))
     };
 
-    let funcs = process(resources, string_match);
+    let mut funcs = TokenStream::new();
+    let body = process(resources, string_match, &mut funcs);
 
     let expanded = quote! {
         mod __psl_impl {
@@ -84,6 +87,20 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }
             }
 
+            #[inline]
+            fn lookup<'a, T>(mut labels: T, mut info: Info) -> Info
+                where T: Iterator<Item=&'a #iter>
+            {
+                match labels.next() {
+                    Some(label) => {
+                        match label {
+                            #body
+                        }
+                    }
+                    None => info,
+                }
+            }
+
             #funcs
         }
     };
@@ -94,7 +111,10 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 #[derive(Debug, Clone, Copy)]
 struct StringMatch(bool);
 
-fn process(resources: Vec<Uri>, string_match: bool) -> TokenStream {
+#[derive(Debug, Clone, Copy)]
+struct Depth(usize);
+
+fn process(resources: Vec<Uri>, string_match: bool, funcs: &mut TokenStream) -> TokenStream {
     use self::Uri::*;
 
     let mut list = if resources.is_empty() {
@@ -162,25 +182,188 @@ fn process(resources: Vec<Uri>, string_match: bool) -> TokenStream {
         }
     }
 
-    funcs(tree.children_with_keys(), StringMatch(string_match))
+    build("lookup", tree.children_with_keys(), StringMatch(string_match), Depth(0), funcs)
 }
 
-fn leaf_func(fname: syn::Ident, pat: TokenStream) -> TokenStream {
-    quote!{
-        #[inline]
-        fn #fname(mut info: Info) -> Info {
-            info.len = #pat.len();
-            info
+#[derive(Debug, Clone)]
+struct Func {
+    name: syn::Ident,
+    pat: TokenStream,
+    iter: TokenStream,
+    wild: TokenStream,
+}
+
+impl Func {
+    fn new(name: syn::Ident, pat: TokenStream, iter: TokenStream) -> Self {
+        Func { name, pat, iter, wild: TokenStream::new() }
+    }
+
+    fn root(self) -> TokenStream {
+        let Func { name, pat, wild, .. } = self;
+        quote!{
+            #[inline]
+            fn #name(mut info: Info #wild) -> Info {
+                info.len = #pat.len();
+                info
+            }
+        }
+    }
+
+    fn root_with_typ(self, typ: TokenStream) -> TokenStream {
+        let Func { name, pat, wild, .. } = self;
+        quote!{
+            #[inline]
+            fn #name(#wild) -> Info {
+                Info {
+                    len: #pat.len(),
+                    typ: Some(Type::#typ),
+                }
+            }
+        }
+    }
+
+    fn nested_root(self, body: TokenStream) -> TokenStream {
+        let Func { name, pat, iter, wild } = self;
+        quote!{
+            #[inline]
+            fn #name<'a, T>(info: Info, #wild mut labels: T) -> Info
+                where T: Iterator<Item=&'a #iter>
+            {
+                let len = #pat.len();
+                match labels.next() {
+                    Some(label) => {
+                        match label {
+                            #body
+                        }
+                    }
+                    None => info,
+                }
+            }
+        }
+    }
+
+    fn nested_root_with_typ(self, typ: TokenStream, body: TokenStream) -> TokenStream {
+        let Func { name, pat, iter, wild } = self;
+        quote!{
+            #[inline]
+            fn #name<'a, T>(#wild mut labels: T) -> Info
+                where T: Iterator<Item=&'a #iter>
+            {
+                let len = #pat.len();
+                let info = Info {
+                    len,
+                    typ: Some(Type::#typ),
+                };
+                match labels.next() {
+                    Some(label) => {
+                        match label {
+                            #body
+                        }
+                    }
+                    None => info,
+                }
+            }
+        }
+    }
+
+    fn leaf(self, typ: TokenStream) -> TokenStream {
+        let Func { name, pat, wild, .. } = self;
+        quote!{
+            #[inline]
+            fn #name(#wild len: usize) -> Info {
+                Info {
+                    len: len + 1 + #pat.len(),
+                    typ: Some(Type::#typ),
+                }
+            }
+        }
+    }
+
+    fn bang_leaf(self, typ: TokenStream) -> TokenStream {
+        let Func { name, wild, .. } = self;
+        quote!{
+            #[inline]
+            fn #name(#wild len: usize) -> Info {
+                Info {
+                    len,
+                    typ: Some(Type::#typ),
+                }
+            }
+        }
+    }
+
+    fn inner(self, body: TokenStream) -> TokenStream {
+        let Func { name, pat, iter, wild } = self;
+        quote!{
+            #[inline]
+            fn #name<'a, T>(info: Info, #wild mut labels: T, mut len: usize) -> Info
+                where T: Iterator<Item=&'a #iter>
+            {
+                len += 1 + #pat.len();
+                match labels.next() {
+                    Some(label) => {
+                        match label {
+                            #body
+                        }
+                    }
+                    None => info,
+                }
+            }
+        }
+    }
+
+    fn inner_with_typ(self, typ: TokenStream, body: TokenStream) -> TokenStream {
+        let Func { name, pat, iter, wild } = self;
+        quote!{
+            #[inline]
+            fn #name<'a, T>(#wild mut labels: T, mut len: usize) -> Info
+                where T: Iterator<Item=&'a #iter>
+            {
+                len += 1 + #pat.len();
+                let info = Info {
+                    len,
+                    typ: Some(Type::#typ),
+                };
+                match labels.next() {
+                    Some(label) => {
+                        match label {
+                            #body
+                        }
+                    }
+                    None => info,
+                }
+            }
         }
     }
 }
 
-fn funcs(
+fn ident(name: &str) -> syn::Ident {
+    syn::parse_str::<syn::Ident>(&name).unwrap()
+}
+
+fn pat(label: &str, StringMatch(string_match): StringMatch) -> TokenStream {
+    if label == "_" {
+        quote!(wild)
+    } else {
+        let label = label.trim_left_matches('!');
+        if string_match {
+            quote!(#label)
+        } else {
+            let pat = array_expr(label);
+            quote!(#pat)
+        }
+    }
+}
+
+fn build(
+    fname: &str,
     list: Vec<(&String, &SequenceTrie<String, Type>)>,
     StringMatch(string_match): StringMatch,
+    Depth(depth): Depth,
+    funcs: &mut TokenStream,
 ) -> TokenStream {
     if list.is_empty() {
-        if !cfg!(test) {
+        if depth == 0 && !cfg!(test) {
             panic!("
                 Found empty list. This implementation doesn't support empty lists.
                 If you do want one, you can easily implement the trait `psl::Psl`
@@ -189,114 +372,158 @@ fn funcs(
         }
     }
 
-    let mut body = TokenStream::new();
-    let mut funcs = TokenStream::new();
     let iter = if string_match { quote!(str) } else { quote!([u8]) };
 
-    for (i, (label, tree)) in list.into_iter().enumerate() {
-        let fname = syn::parse_str::<syn::Ident>(&format!("lookup{}", i)).unwrap();
-        let pat = pat(label, StringMatch(string_match));
-        let children = build(tree.children_with_keys(), StringMatch(string_match));
-        if children.is_empty() {
-            body.append_all(quote!{
-                #pat => #fname(info),
-            });
-            funcs.append_all(leaf_func(fname, pat));
-        } else {
-            body.append_all(quote!{
-                #pat => #fname(labels, info),
-            });
-            funcs.append_all(quote!{
-                #[inline]
-                fn #fname<'a, T>(mut labels: T, mut info: Info) -> Info
-                    where T: Iterator<Item=&'a #iter>
-                {
-                    let mut len = #pat.len();
-                    info.len = len;
-                    #children
-                    info
-                }
-            });
-        };
-    }
-
-    funcs.append_all(quote! {
-        #[inline]
-        fn lookup<'a, T>(mut labels: T, mut info: Info) -> Info
-            where T: Iterator<Item=&'a #iter>
-        {
-            match labels.next() {
-                Some(label) => {
-                    match label {
-                        #body
-                        val => {
-                            info.len = val.len();
-                            info
-                        }
-                    }
-                }
-                None => info,
-            }
-        }
-    });
-
-    funcs
-}
-
-fn pat(label: &str, StringMatch(string_match): StringMatch) -> TokenStream {
-    if string_match {
-        quote!(#label)
-    } else {
-        let pat = array_expr(label);
-        quote!(#pat)
-    }
-}
-
-fn build(
-    list: Vec<(&String, &SequenceTrie<String, Type>)>,
-    string_match: StringMatch,
-) -> TokenStream {
     let mut head = TokenStream::new();
     let mut body = TokenStream::new();
     let mut footer = TokenStream::new();
 
-    for (label, tree) in list {
-        let mut info = TokenStream::new();
-        if let Some(val) = tree.value() {
-            let t = match *val {
-                Type::Icann => syn::parse_str::<syn::Type>("Icann").unwrap(),
-                Type::Private => syn::parse_str::<syn::Type>("Private").unwrap(),
-            };
-            info = quote! {
-                info = Info { len, typ: Some(Type::#t) };
-            };
-        }
-        let children = build(tree.children_with_keys(), string_match);
+    for (i, (label, tree)) in list.into_iter().enumerate() {
+        let typ = match tree.value() {
+            Some(val) => {
+                let typ = match *val {
+                    Type::Icann => syn::parse_str::<syn::Type>("Icann").unwrap(),
+                    Type::Private => syn::parse_str::<syn::Type>("Private").unwrap(),
+                };
+                quote!(#typ)
+            }
+            None => TokenStream::new(),
+        };
+
+        let name = if fname == "lookup" { format!("lookup{}", i) } else { format!("{}_{}", fname, i) };
+        let fident = ident(&name);
+        let children = build(&name, tree.children_with_keys(), StringMatch(string_match), Depth(depth + 1), funcs);
+        let pat = pat(label, StringMatch(string_match));
+        let mut func = Func::new(fident.clone(), pat.clone(), iter.clone());
+
+        // Exception rules
         if label.starts_with('!') {
-            let label = label.trim_left_matches('!');
-            let pat = pat(label, string_match);
-            head.append_all(quote! {
-                #pat => {
-                    #info
+            if !children.is_empty() {
+                panic!("an exclamation mark must be at the end of an exception rule")
+            }
+            funcs.append_all(func.bang_leaf(typ));
+            if depth == 0 {
+                panic!("an exception rule is an expected in TLD position");
+            } else {
+                head.append_all(quote! {
+                    #pat => #fident(len),
+                });
+            }
+        }
+        
+        // Wildcard rules
+        else if label == "_" {
+            if depth == 0 {
+                if children.is_empty() {
+                    if typ.is_empty() {
+                        func.wild = quote!(, wild: &#iter);
+                        funcs.append_all(func.root());
+                        footer.append_all(quote!{
+                            wild => #fident(info, wild),
+                        });
+                    } else {
+                        func.wild = quote!(wild: &#iter);
+                        funcs.append_all(func.root_with_typ(typ));
+                        footer.append_all(quote!{
+                            wild => #fident(wild),
+                        });
+                    }
+                } else {
+                    if typ.is_empty() {
+                        func.wild = quote!(wild: &#iter,);
+                        funcs.append_all(func.nested_root(children));
+                        footer.append_all(quote!{
+                            wild => #fident(info, wild, labels),
+                        });
+                    } else {
+                        func.wild = quote!(wild: &#iter,);
+                        funcs.append_all(func.nested_root_with_typ(typ, children));
+                        footer.append_all(quote!{
+                            wild => #fident(wild, labels),
+                        });
+                    }
                 }
-            });
-        } else if label == "_" {
-            footer.append_all(quote! {
-                wild => {
-                    len += wild.len() + 1;
-                    #info
-                    #children
+            }
+            
+            else {
+                if children.is_empty() {
+                    func.wild = quote!(wild: &#iter,);
+                    funcs.append_all(func.leaf(typ));
+                    footer.append_all(quote!{
+                        wild => #fident(wild, len),
+                    });
+                } else {
+                    if typ.is_empty() {
+                        func.wild = quote!(wild: &#iter,);
+                        funcs.append_all(func.inner(children));
+                        footer.append_all(quote!{
+                            wild => #fident(info, wild, labels, len),
+                        });
+                    } else {
+                        func.wild = quote!(wild: &#iter,);
+                        funcs.append_all(func.inner_with_typ(typ, children));
+                        footer.append_all(quote!{
+                            wild => #fident(wild, labels, len),
+                        });
+                    }
                 }
-            });
-        } else {
-            let pat = pat(label, string_match);
-            body.append_all(quote! {
-                #pat => {
-                    len += #pat.len() + 1;
-                    #info
-                    #children
+            }
+        }
+        
+        // Plain rules
+        else {
+            if depth == 0 {
+                if children.is_empty() {
+                    if typ.is_empty() {
+                        funcs.append_all(func.root());
+                        body.append_all(quote!{
+                            #pat => #fident(info),
+                        });
+                    } else {
+                        funcs.append_all(func.root_with_typ(typ));
+                        body.append_all(quote!{
+                            #pat => #fident(),
+                        });
+                    }
                 }
-            });
+                
+                else {
+                    if typ.is_empty() {
+                        funcs.append_all(func.nested_root(children));
+                        body.append_all(quote!{
+                            #pat => #fident(info, labels),
+                        });
+                    } else {
+                        funcs.append_all(func.nested_root_with_typ(typ, children));
+                        body.append_all(quote!{
+                            #pat => #fident(labels),
+                        });
+                    }
+                }
+            }
+            
+            else {
+                if children.is_empty() {
+                    funcs.append_all(func.leaf(typ));
+                    body.append_all(quote!{
+                        #pat => #fident(len),
+                    });
+                }
+                
+                else {
+                    if typ.is_empty() {
+                        funcs.append_all(func.inner(children));
+                        body.append_all(quote!{
+                            #pat => #fident(info, labels, len),
+                        });
+                    } else {
+                        funcs.append_all(func.inner_with_typ(typ, children));
+                        body.append_all(quote!{
+                            #pat => #fident(labels, len),
+                        });
+                    }
+                }
+            }
         }
     }
 
@@ -305,20 +532,22 @@ fn build(
     }
 
     if footer.is_empty() {
-        footer.append_all(quote!(_ => {}));
+        if fname == "lookup" {
+            footer.append_all(quote!{
+                wild => {
+                    info.len = wild.len();
+                    info
+                }
+            });
+        } else {
+            footer.append_all(quote!(_ => info,));
+        }
     }
 
     quote! {
-        match labels.next() {
-            Some(label) => {
-                match label {
-                    #head
-                    #body
-                    #footer
-                }
-            }
-            None => {}
-        }
+        #head
+        #body
+        #footer
     }
 }
 
