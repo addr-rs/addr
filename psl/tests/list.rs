@@ -99,6 +99,34 @@ fn list_behaviour() {
             }
         }
     }));
+
+    rspec::run(&rspec::describe("extra tests", (), |ctx| {
+        let extra = vec![
+            ("gp-id-ter-acc-1.to.gp-kl-cas-11-ses001-ses-1.wdsl.5m.za", "za"),
+            ("yokohama.jp", "jp"),
+            ("kobe.jp", "jp"),
+            ("foo.bar.platform.sh", "bar.platform.sh"),
+            ("bar.platform.sh", "bar.platform.sh"),
+            ("platform.sh", "sh"),
+            ("sh", "sh"),
+        ];
+
+        for (input, expected) in extra {
+            ctx.when(msg(format!("input is `{}`", input)), |ctx| {
+                let expected_suffix = Some(expected.to_owned());
+                ctx.it(msg(format!("means the suffix {}", val(&expected_suffix))), move |_| {
+                    let domain = list.suffix(input).unwrap();
+                    let found_suffix = Some(domain.to_string());
+                    if expected_suffix == found_suffix {
+                        ExampleReport::Success
+                    } else {
+                        let msg = format!("expected `{:?}` but found `{:?}`", expected_suffix, found_suffix);
+                        ExampleReport::Failure(Some(msg))
+                    }
+                });
+            });
+        }
+    }));
 }
 
 // Converts a String to &'static str
