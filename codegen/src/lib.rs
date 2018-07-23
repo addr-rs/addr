@@ -226,10 +226,11 @@ impl Func {
         let Func { name, pat, iter, wild } = self;
         quote!{
             #[inline]
-            fn #name<'a, T>(info: Info, #wild mut labels: T) -> Info
+            fn #name<'a, T>(mut info: Info, #wild mut labels: T) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
                 let len = #pat.len();
+                info.len = len;
                 match labels.next() {
                     Some(label) => {
                         match label {
@@ -390,7 +391,7 @@ fn build(
             None => TokenStream::new(),
         };
 
-        let name = if fname == "lookup" { format!("lookup{}", i) } else { format!("{}_{}", fname, i) };
+        let name = format!("{}_{}", fname, i);
         let fident = ident(&name);
         let children = build(&name, tree.children_with_keys(), StringMatch(string_match), Depth(depth + 1), funcs);
         let pat = pat(label, StringMatch(string_match));
@@ -399,11 +400,11 @@ fn build(
         // Exception rules
         if label.starts_with('!') {
             if !children.is_empty() {
-                panic!("an exclamation mark must be at the end of an exception rule")
+                panic!("an exclamation mark must be at the end of an exception rule: {}", label)
             }
             funcs.append_all(func.bang_leaf(typ));
             if depth == 0 {
-                panic!("an exception rule is an expected in TLD position");
+                panic!("an exception rule cannot be in TLD position: {}", label);
             } else {
                 head.append_all(quote! {
                     #pat => #fident(len),
