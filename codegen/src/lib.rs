@@ -10,6 +10,7 @@ extern crate syn;
 extern crate quote;
 extern crate sequence_trie;
 extern crate idna;
+extern crate itertools;
 
 use std::env;
 use idna::domain_to_unicode;
@@ -19,6 +20,7 @@ use proc_macro2::TokenStream;
 use syn::{DeriveInput, Attribute, Meta, NestedMeta, Lit};
 use quote::TokenStreamExt;
 use sequence_trie::SequenceTrie;
+use itertools::Itertools;
 
 #[proc_macro_derive(Psl, attributes(psl))]
 pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -168,17 +170,26 @@ fn process(resources: Vec<Uri>, string_match: bool, funcs: &mut TokenStream) -> 
     for val in list.rules.values() {
         for suffix in val {
             let rule = suffix.rule.replace("*", "_");
-            let labels: Vec<_> = rule.split('.')
-                .map(|s| s.to_owned())
-                .rev()
+            let len = rule.chars().count();
+            let cases: Vec<_> = rule.to_lowercase().chars().interleave(rule.to_uppercase().chars())
+                .combinations(len)
+                .map(|s| -> String { s.into_iter().collect() })
+                .filter(|s| s.to_lowercase() == rule.to_lowercase())
+                .unique()
                 .collect();
-            tree.insert(labels.iter(), suffix.typ);
-            let labels: Vec<_> = labels.into_iter().map(|label| {
-                idna::domain_to_ascii(&label)
-                    .expect(&format!("expected: a label that can be converted to ascii, found: {}", label))
-            })
-            .collect();
-            tree.insert(labels.iter(), suffix.typ);
+            for rule in cases {
+                let labels: Vec<_> = rule.split('.')
+                    .map(|s| s.to_owned())
+                    .rev()
+                    .collect();
+                tree.insert(labels.iter(), suffix.typ);
+                let labels: Vec<_> = labels.into_iter().map(|label| {
+                    idna::domain_to_ascii(&label)
+                        .expect(&format!("expected: a label that can be converted to ascii, found: {}", label))
+                })
+                .collect();
+                tree.insert(labels.iter(), suffix.typ);
+            }
         }
     }
 
