@@ -267,32 +267,6 @@ impl Func {
         }
     }
 
-    fn leaf(self, typ: TokenStream) -> TokenStream {
-        let Func { name, pat, wild, .. } = self;
-        quote!{
-            #[inline]
-            fn #name(#wild len: usize) -> Info {
-                Info {
-                    len: len + 1 + #pat.len(),
-                    typ: Some(Type::#typ),
-                }
-            }
-        }
-    }
-
-    fn bang_leaf(self, typ: TokenStream) -> TokenStream {
-        let Func { name, wild, .. } = self;
-        quote!{
-            #[inline]
-            fn #name(#wild len: usize) -> Info {
-                Info {
-                    len,
-                    typ: Some(Type::#typ),
-                }
-            }
-        }
-    }
-
     fn inner(self, body: TokenStream) -> TokenStream {
         let Func { name, pat, iter, wild } = self;
         quote!{
@@ -332,6 +306,32 @@ impl Func {
                         }
                     }
                     None => info,
+                }
+            }
+        }
+    }
+
+    fn leaf(self, typ: TokenStream) -> TokenStream {
+        let Func { name, pat, wild, .. } = self;
+        quote!{
+            #[inline]
+            fn #name(#wild len: usize) -> Info {
+                Info {
+                    len: len + 1 + #pat.len(),
+                    typ: Some(Type::#typ),
+                }
+            }
+        }
+    }
+
+    fn bang_leaf(self, typ: TokenStream) -> TokenStream {
+        let Func { name, wild, .. } = self;
+        quote!{
+            #[inline]
+            fn #name(#wild len: usize) -> Info {
+                Info {
+                    len,
+                    typ: Some(Type::#typ),
                 }
             }
         }
