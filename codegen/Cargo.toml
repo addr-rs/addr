@@ -24,7 +24,7 @@ proc-macro2 = "0.4"
 quote = "0.6"
 sequence_trie = "0.3"
 idna = "0.1"
-itertools = "0.7"
+crossbeam = "0.3"
 
 [dependencies.syn]
 version = "0.14"
