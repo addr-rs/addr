@@ -88,7 +88,7 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }
             }
 
-            #[inline]
+            
             fn lookup<'a, T>(mut labels: T, mut info: Info) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
@@ -236,7 +236,7 @@ impl Func {
     fn root(self) -> TokenStream {
         let Func { name, len, wild, .. } = self;
         quote!{
-            #[inline]
+            
             fn #name(mut info: Info #wild) -> Info {
                 info.len = #len;
                 info
@@ -247,7 +247,7 @@ impl Func {
     fn root_with_typ(self, typ: TokenStream) -> TokenStream {
         let Func { name, len, wild, .. } = self;
         quote!{
-            #[inline]
+            
             fn #name(#wild) -> Info {
                 Info {
                     len: #len,
@@ -260,7 +260,7 @@ impl Func {
     fn nested_root(self, body: TokenStream) -> TokenStream {
         let Func { name, len, iter, wild } = self;
         quote!{
-            #[inline]
+            
             fn #name<'a, T>(mut info: Info, #wild mut labels: T) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
@@ -281,7 +281,7 @@ impl Func {
     fn nested_root_with_typ(self, typ: TokenStream, body: TokenStream) -> TokenStream {
         let Func { name, len, iter, wild } = self;
         quote!{
-            #[inline]
+            
             fn #name<'a, T>(#wild mut labels: T) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
@@ -305,7 +305,7 @@ impl Func {
     fn inner(self, body: TokenStream) -> TokenStream {
         let Func { name, len, iter, wild } = self;
         quote!{
-            #[inline]
+            
             fn #name<'a, T>(info: Info, #wild mut labels: T, mut acc: usize) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
@@ -325,7 +325,7 @@ impl Func {
     fn inner_with_typ(self, typ: TokenStream, body: TokenStream) -> TokenStream {
         let Func { name, len, iter, wild } = self;
         quote!{
-            #[inline]
+            
             fn #name<'a, T>(#wild mut labels: T, mut acc: usize) -> Info
                 where T: Iterator<Item=&'a #iter>
             {
@@ -349,7 +349,7 @@ impl Func {
     fn leaf(self, typ: TokenStream) -> TokenStream {
         let Func { name, len, wild, .. } = self;
         quote!{
-            #[inline]
+            
             fn #name(#wild acc: usize) -> Info {
                 Info {
                     len: acc + 1 + #len,
@@ -362,7 +362,7 @@ impl Func {
     fn bang_leaf(self, typ: TokenStream) -> TokenStream {
         let Func { name, wild, .. } = self;
         quote!{
-            #[inline]
+            
             fn #name(#wild acc: usize) -> Info {
                 Info {
                     len: acc,
