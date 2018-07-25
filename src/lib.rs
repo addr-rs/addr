@@ -1,48 +1,50 @@
-//! Robust domain name parsing using the Public Suffix List
-//!
-//! This library allows you to easily and accurately parse any given domain name.
-//!
-//! ## Examples
-//!
-//! ```rust
-//! extern crate addr;
-//!
-//! use addr::{DomainName, DnsName, Email};
-//! # use addr::Result;
-//!
-//! # fn main() -> Result<()> {
-//! // You can find out the root domain
-//! // or extension of any given domain name
-//! let domain: DomainName = "www.example.com".parse()?;
-//! assert_eq!(domain.root(), "example.com.");
-//! assert_eq!(domain.root().suffix(), "com.");
-//!
-//! let domain: DomainName = "www.食狮.中国".parse()?;
-//! assert_eq!(domain.root(), "食狮.中国.");
-//! assert_eq!(domain.root().suffix(), "中国.");
-//!
-//! let domain: DomainName = "www.xn--85x722f.xn--55qx5d.cn".parse()?;
-//! assert_eq!(domain.root(), "公司.cn.");
-//! assert_eq!(domain.root().suffix(), "cn.");
-//!
-//! let domain: DomainName = "a.b.example.uk.com".parse()?;
-//! assert_eq!(domain.root(), "example.uk.com.");
-//! assert_eq!(domain.root().suffix(), "uk.com.");
-//!
-//! let name: DnsName = "_tcp.example.com.".parse()?;
-//! assert_eq!(name.root(), "example.com.");
-//! assert_eq!(name.root().suffix(), "com.");
-//!
-//! let email: Email = "чебурашка@ящик-с-апельсинами.рф".parse()?;
-//! assert_eq!(email.user(), "чебурашка");
-//! assert_eq!(email.host(), "ящик-с-апельсинами.рф.");
-//!
-//! // In any case if the domain's suffix is in the list
-//! // then this is definately a registrable domain name
-//! assert!(domain.root().suffix().is_known());
-//! # Ok(())
-//! # }
-//! ```
+/*!
+  Robust domain name parsing using the Public Suffix List
+
+  This library allows you to easily and accurately parse any given domain name.
+
+  ## Examples
+
+  ```rust
+  extern crate addr;
+
+  use addr::{DomainName, DnsName, Email};
+  # use addr::Result;
+
+  # fn main() -> Result<()> {
+    // You can find out the root domain
+    // or extension of any given domain name
+    let domain: DomainName = "www.example.com".parse()?;
+    assert_eq!(domain.root(), "example.com.");
+    assert_eq!(domain.root().suffix(), "com.");
+
+    let domain: DomainName = "www.食狮.中国".parse()?;
+    assert_eq!(domain.root(), "食狮.中国.");
+    assert_eq!(domain.root().suffix(), "中国.");
+
+    let domain: DomainName = "www.xn--85x722f.xn--55qx5d.cn".parse()?;
+    assert_eq!(domain.root(), "公司.cn.");
+    assert_eq!(domain.root().suffix(), "cn.");
+
+    let domain: DomainName = "a.b.example.uk.com".parse()?;
+    assert_eq!(domain.root(), "example.uk.com.");
+    assert_eq!(domain.root().suffix(), "uk.com.");
+
+    let name: DnsName = "_tcp.example.com.".parse()?;
+    assert_eq!(name.root(), "example.com.");
+    assert_eq!(name.root().suffix(), "com.");
+
+    let email: Email = "чебурашка@ящик-с-апельсинами.рф".parse()?;
+    assert_eq!(email.user(), "чебурашка");
+    assert_eq!(email.host(), "ящик-с-апельсинами.рф.");
+
+    // In any case if the domain's suffix is in the list
+    // then this is definately a registrable domain name
+    assert!(domain.root().suffix().is_known());
+  # Ok(())
+  # }
+  ```
+!*/
 
 #![recursion_limit = "1024"]
 
@@ -71,9 +73,15 @@ pub use errors::{Result, Error};
 
 lazy_static! {
     // Regex for matching domain name labels
-    static ref DOMAIN: Regex = Regex::new(
-        r"(?i)^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$"
-    ).unwrap();
+    static ref DOMAIN: Regex = {
+        // or it can start with an alphanumeric character
+        // then optionally be followed by any combination of
+        // alphanumeric characters and dashes before finally
+        // ending with an alphanumeric character
+        let label = "[[:alnum:]]+[[:alnum:]-]*[[:alnum:]]+";
+        let expr = format!(r"^(({}){{1,62}}\.){{1,127}}$", label);
+        Regex::new(&expr).unwrap()
+    };
 
     // Regex for matching the local-part of an
     // email address
@@ -154,21 +162,30 @@ impl FromStr for DomainName {
 
     fn from_str(domain: &str) -> Result<Self> {
         use inner::Domain;
-
-        let input = domain.to_lowercase();
-        if !Self::has_valid_syntax(&input) {
+        let fqdn = fqdn(domain);
+        if !Self::has_valid_syntax(&fqdn) {
             return Err(ErrorKind::InvalidDomain(domain.into()).into());
         }
-
-        let inner = Domain::try_new_or_drop(input, |full| {
+        let inner = Domain::try_new_or_drop(fqdn, |full| {
             match List.domain(&full) {
                 Some(root) => { Ok(root) }
                 None => { Err(Error::from(ErrorKind::InvalidDomain(domain.into()))) }
             }
         })?;
-
         Ok(DomainName { inner })
     }
+}
+
+fn fqdn(domain: &str) -> String {
+    let mut input = if cfg!(feature = "anycase") {
+        domain.to_owned()
+    } else {
+        domain.to_lowercase()
+    };
+    if !input.ends_with('.') {
+        input += ".";
+    }
+    input
 }
 
 impl FromStr for DnsName {
@@ -176,8 +193,8 @@ impl FromStr for DnsName {
 
     fn from_str(host: &str) -> Result<Self> {
         use inner::Dns;
-
-        let inner = Dns::try_new_or_drop(host.to_owned(), |full| {
+        let fqdn = fqdn(host);
+        let inner = Dns::try_new_or_drop(fqdn, |full| {
             match List::new().domain(&full) {
                 Some(root) => {
                     if !DomainName::has_valid_syntax(root.to_str()) {
@@ -188,7 +205,6 @@ impl FromStr for DnsName {
                 None => { Err(Error::from(ErrorKind::InvalidDomain(host.into()))) }
             }
         })?;
-
         Ok(DnsName { inner })
     }
 }
