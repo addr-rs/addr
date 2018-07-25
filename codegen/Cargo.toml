@@ -19,6 +19,9 @@ default = ["prefix"]
 # from the `psl` crate with the name of the crate
 prefix = []
 
+# This is experimental
+anycase = []
+
 [dependencies]
 proc-macro2 = "0.4"
 quote = "0.6"

@@ -12,6 +12,7 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 [features]
 default = ["list"]
 list = ["psl-codegen", "serde"]
+anycase = ["psl-codegen/anycase", "list"]
 
 [dependencies.serde]
 version = "1.0"

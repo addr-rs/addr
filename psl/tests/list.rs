@@ -43,8 +43,7 @@ fn list_behaviour() {
                         Some(res) => res,
                         None => { panic!(format!("line {} of the test file doesn't seem to be valid", i)); },
                     };
-                    let var = if let Ok(var) = env::var("PSL_TLD") { var } else { String::new() };
-                    if !var.trim().is_empty() && !input.trim().trim_right_matches('.').ends_with(&var) {
+                    if !expected_tld(input) {
                         continue;
                     }
                     let (expected_root, expected_suffix) = match test.next() {
@@ -112,6 +111,9 @@ fn list_behaviour() {
         ];
 
         for (input, expected) in extra {
+            if !expected_tld(input) {
+                continue;
+            }
             ctx.when(msg(format!("input is `{}`", input)), |ctx| {
                 let expected_suffix = Some(expected.to_owned());
                 ctx.it(msg(format!("means the suffix {}", val(&expected_suffix))), move |_| {
@@ -145,4 +147,9 @@ fn val(s: &Option<String>) -> String {
         Some(ref v) => format!("should be `{}`", v),
         None => format!("is invalid"),
     }
+}
+
+fn expected_tld(input: &str) -> bool {
+    let var = if let Ok(var) = env::var("PSL_TLD") { var } else { String::new() };
+    var.trim().is_empty() || input.trim().trim_right_matches('.').ends_with(&var)
 }
