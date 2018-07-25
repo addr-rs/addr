@@ -190,7 +190,7 @@ fn process(resources: Vec<Uri>, string_match: bool, funcs: &mut TokenStream) -> 
 // Thanks /u/ErichDonGubler!
 fn all_cases(string: &str) -> HashSet<String> {
     let num_chars = string.chars().count();
-    assert!(num_chars < 4, "{}: `anycase` feature only supports labels with 3 characters or less", string);
+    assert!(num_chars < 4, "found label `{}`: `anycase` feature currently supports labels with 3 characters or less only", string);
 
     let num_cases = usize::pow(2, num_chars as u32);
     let mut cases = HashSet::with_capacity(num_cases);
