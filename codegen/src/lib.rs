@@ -10,8 +10,8 @@ extern crate syn;
 extern crate quote;
 extern crate sequence_trie;
 extern crate idna;
-extern crate crossbeam;
 
+use std::collections::HashSet;
 use std::env;
 use idna::domain_to_unicode;
 
@@ -168,46 +168,53 @@ fn process(resources: Vec<Uri>, string_match: bool, funcs: &mut TokenStream) -> 
     let mut tree = SequenceTrie::new();
     for val in list.rules.values() {
         for suffix in val {
-            crossbeam::scope(|scope| {
-                scope.spawn(|| {
-                    let rule = suffix.rule.replace("*", "_");
-                    let labels: Vec<_> = rule.split('.')
-                        .map(|s| s.to_owned())
-                        .rev()
-                        .collect();
-                    tree.insert(labels.iter(), suffix.typ);
-                    let labels: Vec<_> = labels.into_iter().map(|label| {
-                        idna::domain_to_ascii(&label)
-                            .expect(&format!("expected: a label that can be converted to ascii, found: {}", label))
-                    })
-                    .collect();
-                    tree.insert(labels.iter(), suffix.typ);
-                });
-            });
+            let rule = suffix.rule.replace("*", "_");
+            let labels: Vec<_> = rule.split('.')
+                .map(|s| s.to_owned())
+                .rev()
+                .collect();
+            tree.insert(labels.iter(), suffix.typ);
+            let labels: Vec<_> = labels.into_iter().map(|label| {
+                idna::domain_to_ascii(&label)
+                    .expect(&format!("expected: a label that can be converted to ascii, found: {}", label))
+            })
+            .collect();
+            tree.insert(labels.iter(), suffix.typ);
         }
     }
 
     build("lookup", tree.children_with_keys(), StringMatch(string_match), Depth(0), funcs)
 }
 
-fn all_cases(rule: &str) -> Vec<String> {
-    let len = rule.chars().count();
-    let total = u64::pow(2, len as u32);
-    let mut cases: Vec<String> = Vec::with_capacity(total as usize);
+// See https://www.reddit.com/r/rust/comments/91h6t8/generating_all_possible_case_variations_of_a/e2yw7qp/
+// Thanks /u/ErichDonGubler!
+fn all_cases(string: &str) -> HashSet<String> {
+    let num_chars = string.chars().count();
+    assert!(num_chars < 4, "{}: `anycase` feature only supports labels with 3 characters or less", string);
 
-    for i in 0..total {
+    let num_cases = usize::pow(2, num_chars as u32);
+    let mut cases = HashSet::with_capacity(num_cases);
+
+    let (upper, lower) = string.chars().fold(
+        (Vec::with_capacity(num_chars), Vec::with_capacity(num_chars)),
+        |(mut upper, mut lower), c| {
+            upper.push(c.to_uppercase().to_string());
+            lower.push(c.to_lowercase().to_string());
+            (upper, lower)
+        }
+    );
+
+    let len = string.len();
+    for i in 0..num_cases {
         let mut s = String::with_capacity(len);
-        for (idx, ch) in rule.chars().enumerate() {
+        for idx in 0..num_chars {
             if (i & (1 << idx)) == 0 {
-                s.push_str(&ch.to_lowercase().to_string())
+                s.push_str(&lower[idx])
             } else {
-                s.push_str(&ch.to_uppercase().to_string())
+                s.push_str(&upper[idx])
             }
         }
-        if s.to_lowercase() == rule {
-            println!("{}", s);
-            cases.push(s);
-        }
+        cases.insert(s);
     }
 
     cases
@@ -350,7 +357,7 @@ impl Func {
             {
                 acc += 1 + #len;
                 let info = Info {
-                    len,
+                    len: acc,
                     typ: Some(Type::#typ),
                 };
                 match labels.next() {
@@ -371,11 +378,11 @@ fn ident(name: &str) -> syn::Ident {
 }
 
 fn pat(label: &str, StringMatch(string_match): StringMatch) -> (TokenStream, TokenStream) {
+    let len = label.len();
     if label == "_" {
         (quote!(wild), quote!(wild.len()))
-    } else {
+    } else if cfg!(feature = "anycase") {
         let label = label.trim_left_matches('!');
-        let len = label.len();
         let cases = all_cases(label).into_iter();
         if string_match {
             let pats = cases.map(|label| quote!(#label));
@@ -383,6 +390,13 @@ fn pat(label: &str, StringMatch(string_match): StringMatch) -> (TokenStream, Tok
         } else {
             let pats = cases.map(|x| array_expr(&x)).map(|pat| quote!(#pat));
             (pat_opts(pats), quote!(#len))
+        }
+    } else {
+        if string_match {
+            (quote!(#label), quote!(#len))
+        } else {
+            let pat = array_expr(label);
+            (quote!(#pat), quote!(#len))
         }
     }
 }
