@@ -378,11 +378,11 @@ fn ident(name: &str) -> syn::Ident {
 }
 
 fn pat(label: &str, StringMatch(string_match): StringMatch) -> (TokenStream, TokenStream) {
+    let label = label.trim_left_matches('!');
     let len = label.len();
     if label == "_" {
         (quote!(wild), quote!(wild.len()))
     } else if cfg!(feature = "anycase") {
-        let label = label.trim_left_matches('!');
         let cases = all_cases(label).into_iter();
         if string_match {
             let pats = cases.map(|label| quote!(#label));
