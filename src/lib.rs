@@ -57,7 +57,10 @@ extern crate rental;
 extern crate lazy_static;
 extern crate regex;
 extern crate idna;
+#[macro_use]
+extern crate nom;
 
+mod parser;
 pub mod errors;
 
 use std::fmt;
@@ -66,23 +69,13 @@ use std::str::FromStr;
 use std::cmp::PartialEq;
 
 use psl::{Psl, List};
-use regex::{Regex, RegexSet};
+use regex::RegexSet;
 use errors::ErrorKind;
+use parser::is_domain;
 
 pub use errors::{Result, Error};
 
 lazy_static! {
-    // Regex for matching domain name labels
-    static ref DOMAIN: Regex = {
-        // or it can start with an alphanumeric character
-        // then optionally be followed by any combination of
-        // alphanumeric characters and dashes before finally
-        // ending with an alphanumeric character
-        let label = "[[:alnum:]]+[[:alnum:]-]*[[:alnum:]]+";
-        let expr = format!(r"^(({}){{1,62}}\.){{1,127}}$", label);
-        Regex::new(&expr).unwrap()
-    };
-
     // Regex for matching the local-part of an
     // email address
     static ref LOCAL: RegexSet = {
@@ -162,11 +155,10 @@ impl FromStr for DomainName {
 
     fn from_str(domain: &str) -> Result<Self> {
         use inner::Domain;
-        let fqdn = fqdn(domain);
-        if !Self::has_valid_syntax(&fqdn) {
+        if !Self::has_valid_syntax(domain) {
             return Err(ErrorKind::InvalidDomain(domain.into()).into());
         }
-        let inner = Domain::try_new_or_drop(fqdn, |full| {
+        let inner = Domain::try_new_or_drop(domain.into(), |full| {
             match List.domain(&full) {
                 Some(root) => { Ok(root) }
                 None => { Err(Error::from(ErrorKind::InvalidDomain(domain.into()))) }
@@ -176,25 +168,12 @@ impl FromStr for DomainName {
     }
 }
 
-fn fqdn(domain: &str) -> String {
-    let mut input = if cfg!(feature = "anycase") {
-        domain.to_owned()
-    } else {
-        domain.to_lowercase()
-    };
-    if !input.ends_with('.') {
-        input += ".";
-    }
-    input
-}
-
 impl FromStr for DnsName {
     type Err = Error;
 
     fn from_str(host: &str) -> Result<Self> {
         use inner::Dns;
-        let fqdn = fqdn(host);
-        let inner = Dns::try_new_or_drop(fqdn, |full| {
+        let inner = Dns::try_new_or_drop(host.into(), |full| {
             match List::new().domain(&full) {
                 Some(root) => {
                     if !DomainName::has_valid_syntax(root.to_str()) {
@@ -289,7 +268,7 @@ impl DomainName {
         if domain.rsplit('.').count() > 127 { return false; }
         match idna::domain_to_ascii(domain) {
             Ok(punycode) => {
-                punycode.len() < 254 && DOMAIN.is_match(&punycode)
+                punycode.len() < 254 && is_domain(&punycode)
             }
             Err(_) => false,
         }
