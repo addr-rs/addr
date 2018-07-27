@@ -13,8 +13,16 @@ fn addr_parsing() {
     let list = List::new();
 
     rspec::run(&rspec::given("a domain", (), |ctx| {
+        ctx.it("should allow non-fully qualified domain names", move |_| {
+            assert!(DomainName::from_str("example.com").is_ok())
+        });
+
         ctx.it("should allow fully qualified domain names", move |_| {
             assert!(DomainName::from_str("example.com.").is_ok())
+        });
+
+        ctx.it("should allow sub-domains", move |_| {
+            assert!(DomainName::from_str("www.example.com.").is_ok())
         });
 
         ctx.it("should not allow more than 1 trailing dot", move |_| {
@@ -47,8 +55,8 @@ fn addr_parsing() {
             }
         });
 
-        ctx.it("should have the same result with or without the trailing dot", move |_| {
-            assert_eq!(DomainName::from_str("example.com.").unwrap(), DomainName::from_str("example.com").unwrap());
+        ctx.it("should not have the same result with or without the trailing dot", move |_| {
+            assert_ne!(DomainName::from_str("example.com.").unwrap(), DomainName::from_str("example.com").unwrap());
         });
 
         ctx.it("should not have empty labels", move |_| {
@@ -91,6 +99,10 @@ fn addr_parsing() {
 
         ctx.it("should allow numbers only labels that are not the tld", move |_| {
             assert!(DomainName::from_str("127.com").is_ok());
+        });
+
+        ctx.it("should not allow number only tlds", move |_| {
+            assert!(DomainName::from_str("example.127").is_err());
         });
 
         ctx.it("should not have more than 127 labels", move |_| {

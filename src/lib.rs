@@ -14,21 +14,21 @@
   # fn main() -> Result<()> {
     // You can find out the root domain
     // or extension of any given domain name
-    let domain: DomainName = "www.example.com".parse()?;
-    assert_eq!(domain.root(), "example.com.");
-    assert_eq!(domain.root().suffix(), "com.");
+    let domain: DomainName = "www.example.com".parse().unwrap();
+    assert_eq!(domain.root(), "example.com");
+    assert_eq!(domain.root().suffix(), "com");
 
     let domain: DomainName = "www.食狮.中国".parse()?;
-    assert_eq!(domain.root(), "食狮.中国.");
-    assert_eq!(domain.root().suffix(), "中国.");
+    assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
+    assert_eq!(domain.root().suffix(), "xn--fiqs8s");
 
     let domain: DomainName = "www.xn--85x722f.xn--55qx5d.cn".parse()?;
-    assert_eq!(domain.root(), "公司.cn.");
-    assert_eq!(domain.root().suffix(), "cn.");
+    assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
+    assert_eq!(domain.root().suffix(), "xn--55qx5d.cn");
 
     let domain: DomainName = "a.b.example.uk.com".parse()?;
-    assert_eq!(domain.root(), "example.uk.com.");
-    assert_eq!(domain.root().suffix(), "uk.com.");
+    assert_eq!(domain.root(), "example.uk.com");
+    assert_eq!(domain.root().suffix(), "uk.com");
 
     let name: DnsName = "_tcp.example.com.".parse()?;
     assert_eq!(name.root(), "example.com.");
@@ -36,7 +36,7 @@
 
     let email: Email = "чебурашка@ящик-с-апельсинами.рф".parse()?;
     assert_eq!(email.user(), "чебурашка");
-    assert_eq!(email.host(), "ящик-с-апельсинами.рф.");
+    assert_eq!(email.host(), "xn-----8kcayoeblonkwzf2jqc1b.xn--p1ai");
 
     // In any case if the domain's suffix is in the list
     // then this is definately a registrable domain name
@@ -57,8 +57,6 @@ extern crate rental;
 extern crate lazy_static;
 extern crate regex;
 extern crate idna;
-#[macro_use]
-extern crate nom;
 
 mod parser;
 pub mod errors;
@@ -71,7 +69,7 @@ use std::cmp::PartialEq;
 use psl::{Psl, List};
 use regex::RegexSet;
 use errors::ErrorKind;
-use parser::is_domain;
+use parser::{parse_domain, to_targetcase};
 
 pub use errors::{Result, Error};
 
@@ -153,35 +151,40 @@ pub struct Email {
 impl FromStr for DomainName {
     type Err = Error;
 
-    fn from_str(domain: &str) -> Result<Self> {
+    fn from_str(input: &str) -> Result<Self> {
         use inner::Domain;
-        if !Self::has_valid_syntax(domain) {
-            return Err(ErrorKind::InvalidDomain(domain.into()).into());
-        }
-        let inner = Domain::try_new_or_drop(domain.into(), |full| {
-            match List.domain(&full) {
-                Some(root) => { Ok(root) }
-                None => { Err(Error::from(ErrorKind::InvalidDomain(domain.into()))) }
+        match parse_domain(input) {
+            Ok(domain) => {
+                let inner = Domain::try_new_or_drop(domain, |full| {
+                    match List.domain(&full) {
+                        Some(root) => { Ok(root) }
+                        None => { Err(Error::from(ErrorKind::InvalidDomain(input.into()))) }
+                    }
+                })?;
+                Ok(DomainName { inner })
             }
-        })?;
-        Ok(DomainName { inner })
+            Err(_) => {
+                Err(ErrorKind::InvalidDomain(input.into()).into())
+            }
+        }
     }
 }
 
 impl FromStr for DnsName {
     type Err = Error;
 
-    fn from_str(host: &str) -> Result<Self> {
+    fn from_str(input: &str) -> Result<Self> {
         use inner::Dns;
-        let inner = Dns::try_new_or_drop(host.into(), |full| {
+        let full = to_targetcase(input);
+        let inner = Dns::try_new_or_drop(full, |full| {
             match List::new().domain(&full) {
                 Some(root) => {
-                    if !DomainName::has_valid_syntax(root.to_str()) {
-                        return Err(Error::from(ErrorKind::InvalidDomain(host.into())));
+                    if parse_domain(root.to_str()).is_err() {
+                        return Err(Error::from(ErrorKind::InvalidDomain(input.into())));
                     }
                     Ok(root)
                 }
-                None => { Err(Error::from(ErrorKind::InvalidDomain(host.into()))) }
+                None => { Err(Error::from(ErrorKind::InvalidDomain(input.into()))) }
             }
         })?;
         Ok(DnsName { inner })
@@ -257,21 +260,6 @@ impl DomainName {
     pub fn root<'a>(&'a self) -> psl::Domain<'a> {
         let rental = unsafe { self.inner.all_erased() };
         *rental.root
-    }
-
-    /// Check if a domain has valid syntax
-    // https://en.wikipedia.org/wiki/Domain_name#Domain_name_syntax
-    // http://blog.sacaluta.com/2011/12/dns-domain-names-253-or-255-bytesoctets.html
-    // https://blogs.msdn.microsoft.com/oldnewthing/20120412-00/?p=7873/
-    fn has_valid_syntax(domain: &str) -> bool {
-        // a domain must not have more than 127 labels
-        if domain.rsplit('.').count() > 127 { return false; }
-        match idna::domain_to_ascii(domain) {
-            Ok(punycode) => {
-                punycode.len() < 254 && is_domain(&punycode)
-            }
-            Err(_) => false,
-        }
     }
 }
 
