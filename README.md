@@ -16,21 +16,21 @@ use addr::{DomainName, DnsName, Email, Result};
 fn main() -> Result<()> {
     // You can find out the root domain
     // or extension of any given domain name
-    let domain: DomainName = "www.example.com".parse()?;
-    assert_eq!(domain.root(), "example.com.");
-    assert_eq!(domain.root().suffix(), "com.");
+    let domain: DomainName = "www.example.com".parse().unwrap();
+    assert_eq!(domain.root(), "example.com");
+    assert_eq!(domain.root().suffix(), "com");
 
     let domain: DomainName = "www.食狮.中国".parse()?;
-    assert_eq!(domain.root(), "食狮.中国.");
-    assert_eq!(domain.root().suffix(), "中国.");
+    assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
+    assert_eq!(domain.root().suffix(), "xn--fiqs8s");
 
     let domain: DomainName = "www.xn--85x722f.xn--55qx5d.cn".parse()?;
-    assert_eq!(domain.root(), "公司.cn.");
-    assert_eq!(domain.root().suffix(), "cn.");
+    assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
+    assert_eq!(domain.root().suffix(), "xn--55qx5d.cn");
 
     let domain: DomainName = "a.b.example.uk.com".parse()?;
-    assert_eq!(domain.root(), "example.uk.com.");
-    assert_eq!(domain.root().suffix(), "uk.com.");
+    assert_eq!(domain.root(), "example.uk.com");
+    assert_eq!(domain.root().suffix(), "uk.com");
 
     let name: DnsName = "_tcp.example.com.".parse()?;
     assert_eq!(name.root(), "example.com.");
@@ -38,12 +38,11 @@ fn main() -> Result<()> {
 
     let email: Email = "чебурашка@ящик-с-апельсинами.рф".parse()?;
     assert_eq!(email.user(), "чебурашка");
-    assert_eq!(email.host(), "ящик-с-апельсинами.рф.");
+    assert_eq!(email.host(), "xn-----8kcayoeblonkwzf2jqc1b.xn--p1ai");
 
     // In any case if the domain's suffix is in the list
     // then this is definately a registrable domain name
     assert!(domain.root().suffix().is_known());
-    Ok(())
 }
 ```
 
