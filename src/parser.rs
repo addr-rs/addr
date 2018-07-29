@@ -4,10 +4,12 @@ static MAX_DOMAIN_LEN: usize = 253;
 static MAX_LABELS_COUNT: usize = 127;
 static MAX_LABEL_LEN: usize = 63;
 
+#[inline]
 fn maybe_tld(input: &str) -> bool {
     !gt_max_label_len(input) && input.parse::<f64>().is_err()
 }
 
+#[inline]
 fn gt_max_label_len(label: &str) -> bool {
     label.len() > MAX_LABEL_LEN
 }
@@ -16,6 +18,7 @@ fn gt_max_label_len(label: &str) -> bool {
 // https://en.wikipedia.org/wiki/Domain_name#Domain_name_syntax
 // http://blog.sacaluta.com/2011/12/dns-domain-names-253-or-255-bytesoctets.html
 // https://blogs.msdn.microsoft.com/oldnewthing/20120412-00/?p=7873/
+#[inline]
 pub fn parse_domain(input: &str) -> Result<String, String> {
     let punycode = if input.is_ascii() {
         to_targetcase(input)
@@ -64,11 +67,12 @@ pub fn parse_domain(input: &str) -> Result<String, String> {
     }
 }
 
+#[inline]
 pub fn to_targetcase(input: &str) -> String {
     if cfg!(feature = "anycase") {
         input.to_owned()
     } else {
-        input.to_lowercase()
+        input.to_ascii_lowercase()
     }
 }
 
