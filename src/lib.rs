@@ -88,7 +88,7 @@ rental! {
 }
 
 #[derive(Debug)]
-//#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+//#[derive(Clone, Ord, PartialOrd, Hash, Debug)]
 pub struct DomainName {
     inner: inner::Domain,
 }
@@ -103,17 +103,13 @@ pub struct DnsName {
 }
 
 /// Holds information about a particular host
-///
-/// This is created by `List::parse_host`.
-#[derive(Debug)]
-//#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Host {
     Ip(IpAddr),
     Domain(DomainName),
 }
 
-#[derive(Debug)]
-//#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Email {
     name: String,
     host: Host,

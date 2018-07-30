@@ -1,6 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
-use std::cmp::PartialEq;
+use std::cmp;
+use std::hash::{Hash, Hasher};
 
 use psl::{self, Psl, List};
 use errors::{Error, Result, ErrorKind};
@@ -46,8 +47,28 @@ impl fmt::Display for DomainName {
     }
 }
 
-impl PartialEq for DomainName {
+impl cmp::PartialEq for DomainName {
     fn eq(&self, other: &DomainName) -> bool {
         self.as_str() == other.as_str()
+    }
+}
+
+impl cmp::Eq for DomainName { }
+
+impl cmp::PartialOrd for DomainName {
+    fn partial_cmp(&self, other: &DomainName) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl cmp::Ord for DomainName {
+    fn cmp(&self, other: &DomainName) -> cmp::Ordering {
+        self.as_str().cmp(other.as_str())
+    }
+}
+
+impl Hash for DomainName {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_str().hash(state);
     }
 }
