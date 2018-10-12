@@ -1,14 +1,15 @@
-sudo: false
 language: rust
 
 rust:
-- 1.25.0
-- stable
-- beta
-- nightly
+  - 1.25.0
+  - stable
+  - beta
+  - nightly
+
+os:
+  - windows
+  - linux
+  - osx
 
 script:
-- cargo test --package psl
-
-cache:
-  cargo: true
+  - cargo test

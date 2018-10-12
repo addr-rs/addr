@@ -88,15 +88,11 @@ rental! {
 }
 
 #[derive(Debug)]
-//#[derive(Clone, Ord, PartialOrd, Hash, Debug)]
 pub struct DomainName {
     inner: inner::Domain,
 }
 
 /// Holds information about a particular DNS name
-///
-/// This is created by `List::parse_dns_name`.
-//#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[derive(Debug)]
 pub struct DnsName {
     inner: inner::Dns,
