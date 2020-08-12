@@ -33,7 +33,7 @@ pub fn parse_domain(input: &str) -> Result<String, String> {
         } else {
             &punycode
         };
-        let mut labels = punycode.rsplit('.');
+        let labels = punycode.rsplit('.');
         // check total lengths
         if punycode.len() > MAX_DOMAIN_LEN || labels.clone().count() > MAX_LABELS_COUNT {
             false
@@ -46,7 +46,7 @@ pub fn parse_domain(input: &str) -> Result<String, String> {
                 let check_labels = || {
                     for label in labels {
                         if label.trim().is_empty() { return false; }
-                        let mut chars = label.chars();
+                        let chars = label.chars();
                         let last = label.len() - 1;
                         for (i, c) in chars.enumerate() {
                             if ((i == 0 || i == last) && !c.is_alphanumeric()) || (c != '-' && !c.is_alphanumeric()) {
