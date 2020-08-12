@@ -241,6 +241,7 @@ fn addr_parsing() {
                 "john.doe@example..com",
                 " prettyandsimple@example.com",
                 "prettyandsimple@example.com ",
+                "@example.com",
             ];
             for email in emails {
                 assert!(Email::from_str(email).is_err());
