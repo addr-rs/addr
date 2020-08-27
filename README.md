@@ -48,7 +48,7 @@ fn main() -> Result<()> {
 
 ## Use Cases
 
-For those who work with domain names the use cases of this library are plenty. [publicsuffix.org/learn](https://publicsuffix.org/learn/) lists quite a few. For the sake of brevity, I'm not going to repeat them here. I work for a domain registrar so we make good use of this library. Here are some of the ways this library can be used:-
+For those who work with domain names the use cases of this library are plenty. [publicsuffix.org/learn](https://publicsuffix.org/learn/) lists quite a few. For the sake of brevity, I'm not going to repeat them here. I work for a domain registrar so we make good use of this library. Here are some of the ways this library can be used:
 
 * Validating domain names. This one is probably obvious. If a `domain.root().suffix().is_known()` you can be absolutely sure this is a valid domain name. A regular expression is simply not robust enough.
 * Validating email addresses. You can utilise this library to validate email addresses in a robust and reliable manner before resorting to more expensive (DNS checks) or less convenient (sending confirmation emails) ways.
