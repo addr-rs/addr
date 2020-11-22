@@ -29,7 +29,7 @@ path = "./psl"
 
 [dev-dependencies]
 rspec = "=1.0.0-beta.4"
-criterion = "0.2"
+criterion = "0.3"
 
 [[bench]]
 name = "list_benchmark"

@@ -23,13 +23,13 @@ prefix = []
 anycase = []
 
 [dependencies]
-proc-macro2 = "0.4"
-quote = "0.6"
+proc-macro2 = "1.0"
+quote = "1.0"
 sequence_trie = "0.3"
-idna = "0.1"
+idna = "0.2"
 
 [dependencies.syn]
-version = "0.14"
+version = "1.0"
 features = ["full"]
 
 [dependencies.psl-lexer]

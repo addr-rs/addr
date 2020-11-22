@@ -378,7 +378,7 @@ fn ident(name: &str) -> syn::Ident {
 }
 
 fn pat(label: &str, StringMatch(string_match): StringMatch) -> (TokenStream, TokenStream) {
-    let label = label.trim_left_matches('!');
+    let label = label.trim_start_matches('!');
     let len = label.len();
     if label == "_" {
         (quote!(wild), quote!(wild.len()))
@@ -402,7 +402,7 @@ fn pat(label: &str, StringMatch(string_match): StringMatch) -> (TokenStream, Tok
 }
 
 fn pat_opts<T>(opts: T) -> TokenStream
-    where T: Iterator<Item=TokenStream> 
+    where T: Iterator<Item=TokenStream>
 {
     let mut pat = TokenStream::new();
     for (i, x) in opts.enumerate() {
@@ -469,7 +469,7 @@ fn build(
                 });
             }
         }
-        
+
         // Wildcard rules
         else if label == "_" {
             if depth == 0 {
@@ -503,7 +503,7 @@ fn build(
                     }
                 }
             }
-            
+
             else {
                 if children.is_empty() {
                     func.wild = quote!(wild: &#iter,);
@@ -528,7 +528,7 @@ fn build(
                 }
             }
         }
-        
+
         // Plain rules
         else {
             if depth == 0 {
@@ -545,7 +545,7 @@ fn build(
                         });
                     }
                 }
-                
+
                 else {
                     if typ.is_empty() {
                         funcs.append_all(func.nested_root(children));
@@ -560,7 +560,7 @@ fn build(
                     }
                 }
             }
-            
+
             else {
                 if children.is_empty() {
                     funcs.append_all(func.leaf(typ));
@@ -568,7 +568,7 @@ fn build(
                         #pat => #fident(acc),
                     });
                 }
-                
+
                 else {
                     if typ.is_empty() {
                         funcs.append_all(func.inner(children));
@@ -626,7 +626,7 @@ struct Attrs {
     resources: Vec<Uri>,
 }
 
-fn lit_str(token: syn::Ident, lit: &Lit) -> Uri {
+fn lit_str(token: &syn::Ident, lit: &Lit) -> Uri {
     match *lit {
         Lit::Str(ref s) => {
             let resource = s.value();
@@ -662,43 +662,46 @@ fn attrs(list: &[Attribute]) -> Attrs {
     }
 
     for attr in list {
-        if let Some(List(ml)) = attr.interpret_meta() {
-            if ml.ident == "psl" {
+        if let Ok(List(ml)) = attr.parse_meta() {
+            if ml.path.is_ident("psl") {
                 for nm in ml.nested {
                     match nm {
                         NestedMeta::Meta(meta) => {
                             match meta {
                                 NameValue(nv) => {
-                                    let token = nv.ident;
-                                    if token == "url" || token == "path" {
-                                        attrs.resources.push(lit_str(token, &nv.lit));
+                                    if let Some(token) = nv.path.get_ident() {
+                                        if token == "url" || token == "path" {
+                                            attrs.resources.push(lit_str(token, &nv.lit));
+                                        }
                                     }
                                 }
                                 List(list) => {
                                     use self::NestedMeta::*;
-
-                                    let token = list.ident;
-                                    if token == "url" || token == "path" {
-                                        for item in list.nested {
-                                            match item {
-                                                Literal(lit) => {
-                                                    attrs.resources.push(lit_str(token.clone(), &lit));
-                                                }
-                                                Meta(_) => {
-                                                    panic!("expected a {}, found an object", token);
+                                    if let Some(token) = list.path.get_ident() {
+                                        if token == "url" || token == "path" {
+                                            for item in list.nested {
+                                                match item {
+                                                    Lit(lit) => {
+                                                        attrs.resources.push(lit_str(token, &lit));
+                                                    }
+                                                    Meta(_) => {
+                                                        panic!("expected a {}, found an object", token);
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                Word(token) => {
-                                    if token == "url" || token == "path" {
-                                        panic!("expected either a list of {}s or a key value pair, found an identifier", token);
+                                Path(path) => {
+                                    if let Some(token) = path.get_ident() {
+                                        if token == "url" || token == "path" {
+                                            panic!("expected either a list of {}s or a key value pair, found an identifier", token);
+                                        }
                                     }
                                 }
                             }
                         }
-                        NestedMeta::Literal(_) => {
+                        NestedMeta::Lit(_) => {
                             panic!("expected a key value pair of urls or paths, found a literal");
                         }
                     }
