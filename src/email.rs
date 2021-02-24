@@ -16,7 +16,7 @@ lazy_static! {
         // the pattern to match
         let quoted = r#"["(),\\:;<>@\[\]. ]"#;
         // combined regex
-        let combined = format!(r#"({}*{}*)"#, global, non_ascii);
+        let combined = format!(r#"({}+|{}+)"#, global, non_ascii);
 
         let exprs = vec![
             // can be any combination of allowed characters

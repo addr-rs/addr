@@ -13,14 +13,14 @@ impl FromStr for Host {
         if let Ok(domain) = DomainName::from_str(host) {
             return Ok(Host::Domain(domain));
         }
-        if host.starts_with("[") 
+        if host.starts_with("[")
             && !host.starts_with("[[")
                 && host.ends_with("]")
                 && !host.ends_with("]]")
                 {
                     host = host
-                        .trim_left_matches("[")
-                        .trim_right_matches("]");
+                        .trim_start_matches("[")
+                        .trim_end_matches("]");
                 };
         if let Ok(ip) = IpAddr::from_str(host) {
             return Ok(Host::Ip(ip));
