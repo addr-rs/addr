@@ -121,7 +121,7 @@ impl IntoUrl for String {
 #[cfg(feature = "remote_list")]
 pub fn request<U: IntoUrl>(u: U) -> Result<String> {
     let url = u.into_url()?;
-    let addr = url.with_default_port(|_| Err(()))?;
+    let addr = url.socket_addrs(|| None)?.pop().expect("url did not resolve to any usable address");
     let host = match url.host_str() {
         Some(host) => host,
         None => { return Err(ErrorKind::NoHost.into()); }

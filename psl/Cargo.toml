@@ -30,4 +30,4 @@ psl-lexer = { version = "0.2", path = "../lexer" }
 rspec = "=1.0.0-beta.4"
 
 [build-dependencies]
-rustc_version = "0.2"
+rustc_version = "0.3"
