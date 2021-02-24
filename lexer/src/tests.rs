@@ -1,8 +1,6 @@
-extern crate rspec;
+use crate::List;
 
-use List;
-
-lazy_static! {
+lazy_static::lazy_static! {
     static ref LIST: List = List::fetch().unwrap();
 }
 

@@ -1,9 +1,9 @@
 use std::fmt;
 use std::str::FromStr;
 
+use errors::{Error, ErrorKind, Result};
 use regex::RegexSet;
-use errors::{Result, Error, ErrorKind};
-use {Host, Email};
+use {Email, Host};
 
 lazy_static! {
     // Regex for matching the local-part of an
@@ -49,14 +49,18 @@ impl FromStr for Email {
     // https://tools.ietf.org/html/rfc6530#section-10.1
     // http://rumkin.com/software/email/rules.php
     fn from_str(address: &str) -> Result<Email> {
-        let mut parts = address.rsplitn(2, "@");
+        let mut parts = address.rsplitn(2, '@');
         let host = match parts.next() {
             Some(host) => host,
-            None => { return Err(ErrorKind::InvalidEmail.into()); }
+            None => {
+                return Err(ErrorKind::InvalidEmail.into());
+            }
         };
         let local = match parts.next() {
             Some(local) => local,
-            None => { return Err(ErrorKind::InvalidEmail.into()); }
+            None => {
+                return Err(ErrorKind::InvalidEmail.into());
+            }
         };
         if local.chars().count() > 64
             || address.chars().count() > 254

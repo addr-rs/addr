@@ -54,19 +54,19 @@ extern crate psl;
 extern crate rental;
 #[macro_use]
 extern crate lazy_static;
-extern crate regex;
 extern crate idna;
+extern crate regex;
 
-mod parser;
-mod host;
-mod domain_impls;
 mod dns_impls;
+mod domain_impls;
 mod email;
 pub mod errors;
+mod host;
+mod parser;
 
 use std::net::IpAddr;
 
-pub use errors::{Result, Error};
+pub use errors::{Error, Result};
 
 rental! {
     mod inner {

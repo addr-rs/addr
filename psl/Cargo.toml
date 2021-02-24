@@ -1,13 +1,14 @@
 [package]
 name = "psl"
 description = "A native library for Mozilla's Public Suffix List"
-version = "0.4.1"
+version = "0.4.2"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr/tree/master/psl"
 documentation = "https://docs.rs/psl"
 readme = "README.md"
 keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
+edition = "2018"
 
 [features]
 default = ["list"]
@@ -15,7 +16,7 @@ list = ["psl-codegen", "serde"]
 anycase = ["psl-codegen/anycase", "list"]
 
 [dependencies.serde]
-version = "1.0"
+version = "1.0.123"
 default-features = false
 optional = true
 
@@ -27,7 +28,7 @@ optional = true
 
 [dev-dependencies]
 psl-lexer = { version = "0.2", path = "../lexer" }
-rspec = "=1.0.0-beta.4"
+rspec = "1.0.0"
 
 [build-dependencies]
-rustc_version = "0.3"
+rustc_version = "0.3.3"

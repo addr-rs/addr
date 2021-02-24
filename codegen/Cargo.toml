@@ -1,13 +1,14 @@
 [package]
 name = "psl-codegen"
 description = "Generate native Rust code from Mozilla's Public Suffix List"
-version = "0.4.2"
+version = "0.4.5"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr/tree/master/codegen"
 documentation = "https://docs.rs/psl-codegen"
 readme = "README.md"
 keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
+edition = "2018"
 
 [lib]
 proc-macro = true
@@ -23,13 +24,13 @@ prefix = []
 anycase = []
 
 [dependencies]
-proc-macro2 = "1.0"
-quote = "1.0"
-sequence_trie = "0.3"
-idna = "0.2"
+proc-macro2 = "1.0.24"
+quote = "1.0.9"
+sequence_trie = "0.3.6"
+idna = "0.2.2"
 
 [dependencies.syn]
-version = "1.0"
+version = "1.0.60"
 features = ["full"]
 
 [dependencies.psl-lexer]

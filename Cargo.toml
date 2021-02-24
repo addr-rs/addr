@@ -4,7 +4,7 @@ members = ["psl", "codegen", "lexer"]
 [package]
 name = "addr"
 description = "A library for parsing domain names and email addresses"
-version = "0.2.0"
+version = "0.2.1"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr"
 documentation = "https://docs.rs/addr"
@@ -17,19 +17,19 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 anycase = ["psl/anycase"]
 
 [dependencies]
-rental = "0.5"
-error-chain = "0.12"
-regex = "1.0"
-lazy_static = "1.0"
-idna = "0.1"
+rental = "0.5.5"
+error-chain = "0.12.4"
+regex = "1.4.3"
+lazy_static = "1.4.0"
+idna = "0.2.2"
 
 [dependencies.psl]
 version = "0.4"
 path = "./psl"
 
 [dev-dependencies]
-rspec = "=1.0.0-beta.4"
-criterion = "0.3"
+rspec = "1.0.0"
+criterion = "0.3.4"
 
 [[bench]]
 name = "list_benchmark"

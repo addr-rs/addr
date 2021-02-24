@@ -1,26 +1,27 @@
 [package]
 name = "psl-lexer"
 description = "A lexer for Mozilla's Public Suffix List"
-version = "0.2.0"
+version = "0.2.2"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr/tree/master/lexer"
 documentation = "https://docs.rs/psl-lexer"
 readme = "README.md"
 keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
+edition = "2018"
 
 [features]
 default = ["remote_list"]
 remote_list = ["native-tls"]
 
 [dependencies]
-error-chain = "0.12"
-url = "2.2"
+error-chain = "0.12.4"
+url = "2.2.1"
 
 [dependencies.native-tls]
-version = "0.2"
+version = "0.2.7"
 optional = true
 
-[dev_dependencies]
-rspec = "=1.0.0-beta.4"
-lazy_static = "1.0"
+[dev-dependencies]
+rspec = "1.0.0"
+lazy_static = "1.4.0"

@@ -1,11 +1,11 @@
-use std::fmt;
-use std::str::FromStr;
 use std::cmp;
+use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
-use psl::{self, Psl, List};
-use errors::{Error, Result, ErrorKind};
+use errors::{Error, ErrorKind, Result};
 use parser::parse_domain;
+use psl::{self, List, Psl};
 use DomainName;
 
 impl FromStr for DomainName {
@@ -15,17 +15,13 @@ impl FromStr for DomainName {
         use inner::Domain;
         match parse_domain(input) {
             Ok(domain) => {
-                let inner = Domain::try_new_or_drop(domain, |full| {
-                    match List.domain(&full) {
-                        Some(root) => { Ok(root) }
-                        None => { Err(Error::from(ErrorKind::InvalidDomain(input.into()))) }
-                    }
+                let inner = Domain::try_new_or_drop(domain, |full| match List.domain(&full) {
+                    Some(root) => Ok(root),
+                    None => Err(Error::from(ErrorKind::InvalidDomain(input.into()))),
                 })?;
                 Ok(DomainName { inner })
             }
-            Err(_) => {
-                Err(ErrorKind::InvalidDomain(input.into()).into())
-            }
+            Err(_) => Err(ErrorKind::InvalidDomain(input.into()).into()),
         }
     }
 }
@@ -35,7 +31,7 @@ impl DomainName {
         self.inner.head()
     }
 
-    pub fn root<'a>(&'a self) -> psl::Domain<'a> {
+    pub fn root(&self) -> psl::Domain<'_> {
         let rental = unsafe { self.inner.all_erased() };
         *rental.root
     }
@@ -53,7 +49,7 @@ impl cmp::PartialEq for DomainName {
     }
 }
 
-impl cmp::Eq for DomainName { }
+impl cmp::Eq for DomainName {}
 
 impl cmp::PartialOrd for DomainName {
     fn partial_cmp(&self, other: &DomainName) -> Option<cmp::Ordering> {

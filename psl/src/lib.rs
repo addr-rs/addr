@@ -2,12 +2,6 @@
 #![forbid(unsafe_code)]
 
 #[cfg(feature = "list")]
-extern crate serde;
-#[cfg(feature = "list")]
-#[macro_use]
-extern crate psl_codegen;
-
-#[cfg(feature = "list")]
 mod list;
 mod trait_impls;
 
@@ -54,7 +48,7 @@ pub trait Psl {
     fn find(&self, domain: &[u8]) -> Info;
 
     /// Get the public suffix of the domain
-    /// 
+    ///
     /// *NB:* `domain` must be a valid domain name in lowercase
     #[inline]
     fn suffix<'a>(&self, domain: &'a str) -> Option<Suffix<'a>> {
@@ -69,7 +63,7 @@ pub trait Psl {
     }
 
     /// Get the registrable domain
-    /// 
+    ///
     /// *NB:* `domain` must be a valid domain name in lowercase
     #[inline]
     fn domain<'a>(&self, domain: &'a str) -> Option<Domain<'a>> {

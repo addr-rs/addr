@@ -1,7 +1,7 @@
-use core::fmt;
 use core::cmp::PartialEq;
+use core::fmt;
 
-use {Domain, Suffix, Type};
+use crate::{Domain, Suffix, Type};
 
 impl<'a> fmt::Display for Suffix<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

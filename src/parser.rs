@@ -29,7 +29,7 @@ pub fn parse_domain(input: &str) -> Result<String, String> {
     };
     let is_valid = {
         let punycode = if punycode.ends_with('.') {
-            &punycode[..punycode.len()-1]
+            &punycode[..punycode.len() - 1]
         } else {
             &punycode
         };
@@ -40,16 +40,23 @@ pub fn parse_domain(input: &str) -> Result<String, String> {
         } else {
             let first_maybe_tld = labels.clone().next().map(maybe_tld);
             // check individual labels
-            if first_maybe_tld == Some(false) || first_maybe_tld.is_none() || labels.clone().any(gt_max_label_len) {
+            if first_maybe_tld == Some(false)
+                || first_maybe_tld.is_none()
+                || labels.clone().any(gt_max_label_len)
+            {
                 false
             } else {
                 let check_labels = || {
                     for label in labels {
-                        if label.trim().is_empty() { return false; }
+                        if label.trim().is_empty() {
+                            return false;
+                        }
                         let chars = label.chars();
                         let last = label.len() - 1;
                         for (i, c) in chars.enumerate() {
-                            if ((i == 0 || i == last) && !c.is_alphanumeric()) || (c != '-' && !c.is_alphanumeric()) {
+                            if ((i == 0 || i == last) && !c.is_alphanumeric())
+                                || (c != '-' && !c.is_alphanumeric())
+                            {
                                 return false;
                             }
                         }

@@ -1,14 +1,14 @@
-use std::fmt;
-use std::str::FromStr;
 use std::cmp;
+use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
-use psl::{self, Psl, List};
 use errors::ErrorKind;
 use parser::{parse_domain, to_targetcase};
+use psl::{self, List, Psl};
 use DnsName;
 
-pub use errors::{Result, Error};
+pub use errors::{Error, Result};
 
 impl FromStr for DnsName {
     type Err = Error;
@@ -16,16 +16,14 @@ impl FromStr for DnsName {
     fn from_str(input: &str) -> Result<Self> {
         use inner::Dns;
         let full = to_targetcase(input);
-        let inner = Dns::try_new_or_drop(full, |full| {
-            match List::new().domain(&full) {
-                Some(root) => {
-                    if parse_domain(root.to_str()).is_err() {
-                        return Err(Error::from(ErrorKind::InvalidDomain(input.into())));
-                    }
-                    Ok(root)
+        let inner = Dns::try_new_or_drop(full, |full| match List::new().domain(&full) {
+            Some(root) => {
+                if parse_domain(root.to_str()).is_err() {
+                    return Err(Error::from(ErrorKind::InvalidDomain(input.into())));
                 }
-                None => { Err(Error::from(ErrorKind::InvalidDomain(input.into()))) }
+                Ok(root)
             }
+            None => Err(Error::from(ErrorKind::InvalidDomain(input.into()))),
         })?;
         Ok(DnsName { inner })
     }
@@ -36,7 +34,7 @@ impl DnsName {
         self.inner.head()
     }
 
-    pub fn root<'a>(&'a self) -> psl::Domain<'a> {
+    pub fn root(&self) -> psl::Domain<'_> {
         let rental = unsafe { self.inner.all_erased() };
         *rental.root
     }
@@ -54,7 +52,7 @@ impl cmp::PartialEq for DnsName {
     }
 }
 
-impl cmp::Eq for DnsName { }
+impl cmp::Eq for DnsName {}
 
 impl cmp::PartialOrd for DnsName {
     fn partial_cmp(&self, other: &DnsName) -> Option<cmp::Ordering> {

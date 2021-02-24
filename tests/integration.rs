@@ -4,9 +4,9 @@ extern crate rspec;
 
 use std::str::FromStr;
 
-use psl::{Psl, List};
-use addr::{DomainName, DnsName, Host, Email};
 use addr::errors::ErrorKind;
+use addr::{DnsName, DomainName, Email, Host};
+use psl::{List, Psl};
 
 #[test]
 fn addr_parsing() {
@@ -33,31 +33,43 @@ fn addr_parsing() {
             }
         });
 
-        ctx.it("should allow a single label with a single trailing dot", move |_| {
-            assert!(list.suffix("com.").is_some());
-        });
+        ctx.it(
+            "should allow a single label with a single trailing dot",
+            move |_| {
+                assert!(list.suffix("com.").is_some());
+            },
+        );
 
-        ctx.it("should always have a suffix for single-label domains", move |_| {
-            let domains = vec![
-                // real TLDs
-                "com",
-                "saarland",
-                "museum.",
-                // non-existant TLDs
-                "localhost",
-                "madeup",
-                "with-dot.",
-            ];
-            for domain in domains {
-                let suffix = list.suffix(domain).unwrap();
-                assert_eq!(suffix, domain);
-                assert!(list.domain(domain).is_none());
-            }
-        });
+        ctx.it(
+            "should always have a suffix for single-label domains",
+            move |_| {
+                let domains = vec![
+                    // real TLDs
+                    "com",
+                    "saarland",
+                    "museum.",
+                    // non-existant TLDs
+                    "localhost",
+                    "madeup",
+                    "with-dot.",
+                ];
+                for domain in domains {
+                    let suffix = list.suffix(domain).unwrap();
+                    assert_eq!(suffix, domain);
+                    assert!(list.domain(domain).is_none());
+                }
+            },
+        );
 
-        ctx.it("should not have the same result with or without the trailing dot", move |_| {
-            assert_ne!(DomainName::from_str("example.com.").unwrap(), DomainName::from_str("example.com").unwrap());
-        });
+        ctx.it(
+            "should not have the same result with or without the trailing dot",
+            move |_| {
+                assert_ne!(
+                    DomainName::from_str("example.com.").unwrap(),
+                    DomainName::from_str("example.com").unwrap()
+                );
+            },
+        );
 
         ctx.it("should not have empty labels", move |_| {
             assert!(DomainName::from_str("exa..mple.com").is_err());
@@ -70,7 +82,6 @@ fn addr_parsing() {
         ctx.it("should not start with a dash", move |_| {
             assert!(DomainName::from_str("-example.com").is_err());
         });
-
 
         ctx.it("should not end with a dash", move |_| {
             assert!(DomainName::from_str("example-.com").is_err());
@@ -97,9 +108,12 @@ fn addr_parsing() {
             assert!(DomainName::from_str("fd79:cdcb:38cc:9dd:f686:e06d:32f3:c123").is_err());
         });
 
-        ctx.it("should allow numbers only labels that are not the tld", move |_| {
-            assert!(DomainName::from_str("127.com").is_ok());
-        });
+        ctx.it(
+            "should allow numbers only labels that are not the tld",
+            move |_| {
+                assert!(DomainName::from_str("127.com").is_ok());
+            },
+        );
 
         ctx.it("should not allow number only tlds", move |_| {
             assert!(DomainName::from_str("example.127").is_err());
@@ -138,26 +152,24 @@ fn addr_parsing() {
             }
         });
 
-        ctx.it("should allow extracting the correct domain name where possible", move |_| {
-            let names = vec![
-                ("_tcp.example.com.", "example.com."),
-                ("_telnet._tcp.example.com.", "example.com."),
-                ("*.example.com.", "example.com."),
-            ];
-            for (name, domain) in names {
-                let name = DnsName::from_str(name).unwrap();
-                let root = name.root();
-                assert_eq!(root, domain);
-            }
-        });
+        ctx.it(
+            "should allow extracting the correct domain name where possible",
+            move |_| {
+                let names = vec![
+                    ("_tcp.example.com.", "example.com."),
+                    ("_telnet._tcp.example.com.", "example.com."),
+                    ("*.example.com.", "example.com."),
+                ];
+                for (name, domain) in names {
+                    let name = DnsName::from_str(name).unwrap();
+                    let root = name.root();
+                    assert_eq!(root, domain);
+                }
+            },
+        );
 
         ctx.it("should have a valid root domain", move |_| {
-            let names = vec![
-                "_tcp.com.",
-                "_telnet._tcp.com.",
-                "*.com.",
-                "ex!mple.com.",
-            ];
+            let names = vec!["_tcp.com.", "_telnet._tcp.com.", "*.com.", "ex!mple.com."];
             for name in names {
                 assert!(DnsName::from_str(name).is_err());
             }
@@ -185,21 +197,35 @@ fn addr_parsing() {
             assert!(Host::from_str("example.com").is_ok());
         });
 
-        ctx.it("cannot be neither an IP address nor a domain name", move |_| {
-            assert!(Host::from_str("23.56").is_err());
-        });
+        ctx.it(
+            "cannot be neither an IP address nor a domain name",
+            move |_| {
+                assert!(Host::from_str("23.56").is_err());
+            },
+        );
 
-        ctx.it("an IPv4 address should parse into an IP object", move |_| {
-            assert!(Host::from_str("127.38.53.247").unwrap().is_ip());
-        });
+        ctx.it(
+            "an IPv4 address should parse into an IP object",
+            move |_| {
+                assert!(Host::from_str("127.38.53.247").unwrap().is_ip());
+            },
+        );
 
-        ctx.it("an IPv6 address should parse into an IP object", move |_| {
-            assert!(Host::from_str("fd79:cdcb:38cc:9dd:f686:e06d:32f3:c123").unwrap().is_ip());
-        });
+        ctx.it(
+            "an IPv6 address should parse into an IP object",
+            move |_| {
+                assert!(Host::from_str("fd79:cdcb:38cc:9dd:f686:e06d:32f3:c123")
+                    .unwrap()
+                    .is_ip());
+            },
+        );
 
-        ctx.it("a domain name should parse into a domain object", move |_| {
-            assert!(Host::from_str("example.com").unwrap().is_domain());
-        });
+        ctx.it(
+            "a domain name should parse into a domain object",
+            move |_| {
+                assert!(Host::from_str("example.com").unwrap().is_domain());
+            },
+        );
     }));
 
     rspec::run(&rspec::given("a parsed email", (), |ctx| {

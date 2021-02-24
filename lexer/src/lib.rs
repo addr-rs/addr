@@ -6,9 +6,7 @@
 //!
 //! ## Examples
 //!
-//! ```rust,norun
-//! extern crate psl_lexer;
-//!
+//! ```rust,no_run
 //! use psl_lexer::List;
 //! # use psl_lexer::Result;
 //!
@@ -28,35 +26,24 @@
 //! # fn main() {}
 //! ```
 
-#![recursion_limit = "1024"]
-
-#[macro_use]
-extern crate error_chain;
-#[cfg(feature = "remote_list")]
-extern crate native_tls;
-extern crate url;
-#[cfg(test)]
-#[macro_use]
-extern crate lazy_static;
-
 pub mod errors;
 
 #[cfg(feature = "remote_list")]
 #[cfg(test)]
 mod tests;
 
+use std::collections::HashMap;
 use std::fs::File;
-use std::path::Path;
-#[cfg(feature = "remote_list")]
-use std::time::Duration;
-#[cfg(feature = "remote_list")]
-use std::net::TcpStream;
 use std::io::Read;
 #[cfg(feature = "remote_list")]
 use std::io::Write;
-use std::collections::HashMap;
+#[cfg(feature = "remote_list")]
+use std::net::TcpStream;
+use std::path::Path;
+#[cfg(feature = "remote_list")]
+use std::time::Duration;
 
-pub use errors::{Result, Error};
+pub use errors::{Error, Result};
 
 use errors::ErrorKind;
 #[cfg(feature = "remote_list")]
@@ -64,7 +51,7 @@ use native_tls::TlsConnector;
 use url::Url;
 
 /// The official URL of the list
-pub const LIST_URL: &'static str = "https://publicsuffix.org/list/public_suffix_list.dat";
+pub const LIST_URL: &str = "https://publicsuffix.org/list/public_suffix_list.dat";
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Suffix {
@@ -121,13 +108,15 @@ impl IntoUrl for String {
 #[cfg(feature = "remote_list")]
 pub fn request<U: IntoUrl>(u: U) -> Result<String> {
     let url = u.into_url()?;
-    let addr = url.socket_addrs(|| None)?.pop().expect("url did not resolve to any usable address");
+    let addr = url.socket_addrs(|| None)?;
     let host = match url.host_str() {
         Some(host) => host,
-        None => { return Err(ErrorKind::NoHost.into()); }
+        None => {
+            return Err(ErrorKind::NoHost.into());
+        }
     };
     let data = format!("GET {} HTTP/1.0\r\nHost: {}\r\n\r\n", url.path(), host);
-    let stream = TcpStream::connect(addr)?;
+    let stream = TcpStream::connect(&*addr)?;
     let timeout = Duration::from_secs(2);
     stream.set_read_timeout(Some(timeout))?;
     stream.set_write_timeout(Some(timeout))?;
@@ -146,7 +135,9 @@ pub fn request<U: IntoUrl>(u: U) -> Result<String> {
             stream.write_all(data.as_bytes())?;
             stream.read_to_string(&mut res)?;
         }
-        _ => { return Err(ErrorKind::UnsupportedScheme.into()); }
+        _ => {
+            return Err(ErrorKind::UnsupportedScheme.into());
+        }
     }
 
     Ok(res)
@@ -154,43 +145,54 @@ pub fn request<U: IntoUrl>(u: U) -> Result<String> {
 
 impl List {
     fn append(&mut self, rule: &str, typ: Type) -> Result<()> {
-        rule.rsplit('.').next()
-            .ok_or(ErrorKind::InvalidRule(rule.into()).into())
+        rule.rsplit('.')
+            .next()
+            .ok_or_else(|| ErrorKind::InvalidRule(rule.into()).into())
             .and_then(|tld| {
                 if tld.is_empty() {
                     return Err(ErrorKind::InvalidRule(rule.into()).into());
                 }
-                Ok(tld)})
-            .and_then(|tld| {
-                self.rules.entry(tld.into()).or_insert(Vec::new())
+                Ok(tld)
+            })
+            .map(|tld| {
+                self.rules
+                    .entry(tld.into())
+                    .or_insert_with(Vec::new)
                     .push(Suffix {
+                        typ,
                         rule: rule.into(),
-                        typ: typ,
                     });
-                Ok(())
             })
     }
 
     fn build(res: &str) -> Result<List> {
         let mut typ = None;
-        let mut list = List { rules: HashMap::new() };
+        let mut list = List {
+            rules: HashMap::new(),
+        };
         for line in res.lines() {
             match line {
-                line if line.contains("BEGIN ICANN DOMAINS") => { typ = Some(Type::Icann); }
-                line if line.contains("BEGIN PRIVATE DOMAINS") => { typ = Some(Type::Private); }
-                line if line.starts_with("//") => { continue; }
-                line => {
-                    match typ {
-                        Some(typ) => {
-                            let rule = match line.split_whitespace().next() {
-                                Some(rule) => rule,
-                                None => continue,
-                            };
-                            list.append(rule, typ)?;
-                        }
-                        None => { continue; }
-                    }
+                line if line.contains("BEGIN ICANN DOMAINS") => {
+                    typ = Some(Type::Icann);
                 }
+                line if line.contains("BEGIN PRIVATE DOMAINS") => {
+                    typ = Some(Type::Private);
+                }
+                line if line.starts_with("//") => {
+                    continue;
+                }
+                line => match typ {
+                    Some(typ) => {
+                        let rule = match line.split_whitespace().next() {
+                            Some(rule) => rule,
+                            None => continue,
+                        };
+                        list.append(rule, typ)?;
+                    }
+                    None => {
+                        continue;
+                    }
+                },
             }
         }
         if list.rules.is_empty() || list.all().is_empty() {
@@ -202,7 +204,7 @@ impl List {
     /// Pull the list from a URL
     #[cfg(feature = "remote_list")]
     pub fn from_url<U: IntoUrl>(url: U) -> Result<List> {
-        request(url).and_then(|list| Self::from_str(&list))
+        request(url).and_then(|list| Self::build(&list))
     }
 
     /// Fetch the list from a local file
@@ -212,7 +214,7 @@ impl List {
             .and_then(|mut data| {
                 let mut res = String::new();
                 data.read_to_string(&mut res)?;
-                Self::from_str(&res)
+                Self::build(&res)
             })
     }
 
@@ -227,19 +229,11 @@ impl List {
         Self::build(&res)
     }
 
-    /// Build the list from a str
-    ///
-    /// The list doesn't always have to come from a file. You can maintain your own
-    /// list, say in a DBMS. You can then pull it at runtime and build the list from
-    /// the resulting str.
-    pub fn from_str(string: &str) -> Result<List> {
-        Self::build(string)
-    }
-
     /// Pull the list from the official URL
     #[cfg(feature = "remote_list")]
     pub fn fetch() -> Result<List> {
-        let github = "https://raw.githubusercontent.com/publicsuffix/list/master/public_suffix_list.dat";
+        let github =
+            "https://raw.githubusercontent.com/publicsuffix/list/master/public_suffix_list.dat";
 
         Self::from_url(LIST_URL)
             // Fallback to the Github repo if the official link
@@ -248,7 +242,8 @@ impl List {
     }
 
     fn find_type(&self, typ: Type) -> Vec<&str> {
-        self.rules.values()
+        self.rules
+            .values()
             .fold(Vec::new(), |mut res, ref suffices| {
                 for suffix in *suffices {
                     if suffix.typ == typ {
@@ -271,7 +266,8 @@ impl List {
 
     /// Gets a list of all domain suffices
     pub fn all(&self) -> Vec<&str> {
-        self.rules.values()
+        self.rules
+            .values()
             .fold(Vec::new(), |mut res, ref suffices| {
                 for suffix in *suffices {
                     res.push(&suffix.rule);
