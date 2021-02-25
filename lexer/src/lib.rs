@@ -40,6 +40,7 @@ use std::io::Write;
 #[cfg(feature = "remote_list")]
 use std::net::TcpStream;
 use std::path::Path;
+use std::str;
 #[cfg(feature = "remote_list")]
 use std::time::Duration;
 

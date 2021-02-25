@@ -1,42 +1,14 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
-#[cfg(feature = "list")]
 mod list;
-mod trait_impls;
+#[cfg(feature = "serde")]
+mod serde;
 
-use core::str;
+use core::cmp::PartialEq;
+use core::{fmt, str};
 
-#[cfg(feature = "list")]
 pub use list::List;
-
-/// Type of suffix
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub enum Type {
-    Icann,
-    Private,
-}
-
-/// Information about the suffix
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct Info {
-    pub len: usize,
-    pub typ: Option<Type>,
-}
-
-/// The suffix of a domain name
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct Suffix<'a> {
-    bytes: &'a [u8],
-    typ: Option<Type>,
-}
-
-/// A registrable domain name
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct Domain<'a> {
-    bytes: &'a [u8],
-    suffix: Suffix<'a>,
-}
 
 /// A list of all public suffices
 pub trait Psl {
@@ -84,6 +56,27 @@ pub trait Psl {
     }
 }
 
+/// Type of suffix
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum Type {
+    Icann,
+    Private,
+}
+
+/// Information about the suffix
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct Info {
+    pub len: usize,
+    pub typ: Option<Type>,
+}
+
+/// The suffix of a domain name
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct Suffix<'a> {
+    bytes: &'a [u8],
+    typ: Option<Type>,
+}
+
 impl<'a> Suffix<'a> {
     #[inline]
     pub fn as_bytes(&self) -> &[u8] {
@@ -106,6 +99,25 @@ impl<'a> Suffix<'a> {
     }
 }
 
+impl<'a> fmt::Display for Suffix<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.to_str())
+    }
+}
+
+impl<'a, 'b> PartialEq<&'a str> for Suffix<'b> {
+    fn eq(&self, other: &&'a str) -> bool {
+        self.to_str() == *other
+    }
+}
+
+/// A registrable domain name
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct Domain<'a> {
+    bytes: &'a [u8],
+    suffix: Suffix<'a>,
+}
+
 impl<'a> Domain<'a> {
     #[inline]
     pub fn as_bytes(&self) -> &[u8] {
@@ -120,5 +132,17 @@ impl<'a> Domain<'a> {
     #[inline]
     pub fn suffix(&self) -> Suffix<'a> {
         self.suffix
+    }
+}
+
+impl<'a> fmt::Display for Domain<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.to_str())
+    }
+}
+
+impl<'a, 'b> PartialEq<&'a str> for Domain<'b> {
+    fn eq(&self, other: &&'a str) -> bool {
+        self.to_str() == *other
     }
 }

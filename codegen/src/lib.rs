@@ -8,36 +8,30 @@ use quote::TokenStreamExt;
 use sequence_trie::SequenceTrie;
 use std::collections::HashSet;
 use std::env;
-use syn::{Attribute, DeriveInput, Lit, Meta, NestedMeta};
 
-#[proc_macro_derive(Psl, attributes(psl))]
-pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input: DeriveInput = syn::parse(input).unwrap();
-
-    let name = input.ident;
-
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-
-    let Attrs { resources } = attrs(&input.attrs);
-
-    let krate = if cfg!(feature = "prefix") {
-        quote!(psl::)
-    } else {
-        quote!(crate::)
-    };
-
+pub fn compile_psl() -> proc_macro2::TokenStream {
     let labels = quote!(domain.rsplit(|x| *x == b'.'));
     let iter = quote!([u8]);
 
     let mut funcs = TokenStream::new();
-    let body = process(resources, &mut funcs);
+    let body = process(&mut funcs);
 
-    let expanded = quote! {
-        #[allow(clippy::collapsible_match)] // TODO investigate this collapsible match
-        mod __psl_impl {
-            use #krate {Psl, Type, Info};
+    quote! {
+            use crate::{Psl, Type, Info};
 
-            impl #impl_generics Psl for super::#name #ty_generics #where_clause {
+            /// Access to the compiled native list
+            #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
+            pub struct List;
+
+            impl List {
+                /// Creates an instance of a new list
+                #[inline]
+                pub fn new() -> Self {
+                    Self
+                }
+            }
+
+            impl Psl for List {
                 fn find(&self, domain: &[u8]) -> Info {
                     let mut info = Info { len: 0, typ: None };
 
@@ -75,45 +69,15 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
 
             #funcs
-        }
-    };
-
-    expanded.into()
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
 struct Depth(usize);
 
-fn process(resources: Vec<Uri>, funcs: &mut TokenStream) -> TokenStream {
-    use self::Uri::*;
-
-    let mut list = if resources.is_empty() {
-        List::fetch().unwrap_or_else(|error| panic!("failed to download the list: {}", error))
-    } else {
-        let mut list = None;
-
-        for resource in resources {
-            let (res, uri, from_url) = match resource {
-                Url(url) => (List::from_url(&url), url, true),
-                Path(path) => (List::from_path(&path), path, false),
-            };
-            match res {
-                Ok(l) => {
-                    list = Some(l);
-                    break;
-                }
-                Err(error) => {
-                    if from_url {
-                        eprintln!("failed to download the list from {}: {}", uri, error);
-                    } else {
-                        eprintln!("failed to open the list from {}: {}", uri, error);
-                    }
-                }
-            }
-        }
-
-        list.expect("could not get the list from any of the supplied resource(s)")
-    };
+fn process(funcs: &mut TokenStream) -> TokenStream {
+    let mut list =
+        List::fetch().unwrap_or_else(|error| panic!("failed to download the list: {}", error));
 
     let mut tlds = Vec::new();
     for key in &["PSL_TLD", "PSL_TLDS"] {
@@ -591,102 +555,4 @@ fn build(
 fn array_expr(label: &str) -> syn::ExprArray {
     let label = format!("{:?}", label.as_bytes());
     syn::parse_str(&label).unwrap()
-}
-
-#[derive(Debug)]
-enum Uri {
-    Url(String),
-    Path(String),
-}
-
-#[derive(Debug)]
-struct Attrs {
-    resources: Vec<Uri>,
-}
-
-fn lit_str(token: &syn::Ident, lit: &Lit) -> Uri {
-    match *lit {
-        Lit::Str(ref s) => {
-            let resource = s.value();
-            if token == "url" {
-                Uri::Url(resource)
-            } else {
-                Uri::Path(resource)
-            }
-        }
-        _ => panic!("`{}` must be a UTF-8 string literal", token),
-    }
-}
-
-fn attrs(list: &[Attribute]) -> Attrs {
-    use self::Meta::*;
-
-    let mut attrs = Attrs {
-        resources: Vec::new(),
-    };
-
-    for key in &["PSL_PATH", "PSL_PATHS", "PSL_URL", "PSL_URLS"] {
-        if let Ok(val) = env::var(key) {
-            for resource in val.split(',').map(|x| x.trim()).filter(|x| !x.is_empty()) {
-                if key.contains("URL") {
-                    attrs.resources.push(Uri::Url(resource.to_owned()));
-                } else {
-                    attrs.resources.push(Uri::Path(resource.to_owned()));
-                }
-            }
-        }
-    }
-
-    if !attrs.resources.is_empty() {
-        return attrs;
-    }
-
-    for attr in list {
-        if let Ok(List(ml)) = attr.parse_meta() {
-            if ml.path.is_ident("psl") {
-                for nm in ml.nested {
-                    match nm {
-                        NestedMeta::Meta(meta) => match meta {
-                            NameValue(nv) => {
-                                if let Some(token) = nv.path.get_ident() {
-                                    if token == "url" || token == "path" {
-                                        attrs.resources.push(lit_str(token, &nv.lit));
-                                    }
-                                }
-                            }
-                            List(list) => {
-                                use self::NestedMeta::*;
-                                if let Some(token) = list.path.get_ident() {
-                                    if token == "url" || token == "path" {
-                                        for item in list.nested {
-                                            match item {
-                                                Lit(lit) => {
-                                                    attrs.resources.push(lit_str(token, &lit));
-                                                }
-                                                Meta(_) => {
-                                                    panic!("expected a {}, found an object", token);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            Path(path) => {
-                                if let Some(token) = path.get_ident() {
-                                    if token == "url" || token == "path" {
-                                        panic!("expected either a list of {}s or a key value pair, found an identifier", token);
-                                    }
-                                }
-                            }
-                        },
-                        NestedMeta::Lit(_) => {
-                            panic!("expected a key value pair of urls or paths, found a literal");
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    attrs
 }
