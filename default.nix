@@ -4,7 +4,6 @@ let
   nixpkgs = import <nixpkgs> { overlays = [ moz_overlay ]; };
   latest = nixpkgs.rustChannelOf {
     channel = "stable";
-    date = "2018-07-10";
   };
 
 in

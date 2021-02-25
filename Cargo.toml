@@ -4,7 +4,7 @@ members = ["psl", "codegen", "lexer"]
 [package]
 name = "addr"
 description = "A library for parsing domain names and email addresses"
-version = "0.2.2-alpha.0"
+version = "0.3.0"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr"
 documentation = "https://docs.rs/addr"
@@ -24,7 +24,7 @@ lazy_static = "1.4.0"
 idna = "0.2.2"
 
 [dependencies.psl]
-version = "0.4"
+version = "0.5"
 path = "./psl"
 
 [dev-dependencies]

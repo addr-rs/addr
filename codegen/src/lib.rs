@@ -26,29 +26,11 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         quote!(crate::)
     };
 
-    let string_match = if let Ok(val) = env::var("PSL_STRING_MATCH") {
-        val == "1"
-    } else {
-        false
-    };
-
-    let (labels, iter) = if string_match {
-        let labels = quote! {
-            match ::core::str::from_utf8(domain) {
-                Ok(domain) => domain.rsplit('.'),
-                Err(_) => {
-                    return info;
-                }
-            }
-        };
-        (labels, quote!(str))
-    } else {
-        let labels = quote!(domain.rsplit(|x| *x == b'.'));
-        (labels, quote!([u8]))
-    };
+    let labels = quote!(domain.rsplit(|x| *x == b'.'));
+    let iter = quote!([u8]);
 
     let mut funcs = TokenStream::new();
-    let body = process(resources, string_match, &mut funcs);
+    let body = process(resources, &mut funcs);
 
     let expanded = quote! {
         #[allow(clippy::collapsible_match)] // TODO investigate this collapsible match
@@ -100,12 +82,9 @@ pub fn derive_psl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct StringMatch(bool);
-
-#[derive(Debug, Clone, Copy)]
 struct Depth(usize);
 
-fn process(resources: Vec<Uri>, string_match: bool, funcs: &mut TokenStream) -> TokenStream {
+fn process(resources: Vec<Uri>, funcs: &mut TokenStream) -> TokenStream {
     use self::Uri::*;
 
     let mut list = if resources.is_empty() {
@@ -181,13 +160,7 @@ fn process(resources: Vec<Uri>, string_match: bool, funcs: &mut TokenStream) -> 
         }
     }
 
-    build(
-        "lookup",
-        tree.children_with_keys(),
-        StringMatch(string_match),
-        Depth(0),
-        funcs,
-    )
+    build("lookup", tree.children_with_keys(), Depth(0), funcs)
 }
 
 // See https://www.reddit.com/r/rust/comments/91h6t8/generating_all_possible_case_variations_of_a/e2yw7qp/
@@ -412,22 +385,15 @@ fn ident(name: &str) -> syn::Ident {
     syn::parse_str::<syn::Ident>(&name).unwrap()
 }
 
-fn pat(label: &str, StringMatch(string_match): StringMatch) -> (TokenStream, TokenStream) {
+fn pat(label: &str) -> (TokenStream, TokenStream) {
     let label = label.trim_start_matches('!');
     let len = label.len();
     if label == "_" {
         (quote!(wild), quote!(wild.len()))
     } else if cfg!(feature = "anycase") {
         let cases = all_cases(label).into_iter();
-        if string_match {
-            let pats = cases.map(|label| quote!(#label));
-            (pat_opts(pats), quote!(#len))
-        } else {
-            let pats = cases.map(|x| array_expr(&x)).map(|pat| quote!(#pat));
-            (pat_opts(pats), quote!(#len))
-        }
-    } else if string_match {
-        (quote!(#label), quote!(#len))
+        let pats = cases.map(|x| array_expr(&x)).map(|pat| quote!(#pat));
+        (pat_opts(pats), quote!(#len))
     } else {
         let pat = array_expr(label);
         (quote!(#pat), quote!(#len))
@@ -451,7 +417,6 @@ where
 fn build(
     fname: &str,
     list: Vec<(&String, &SequenceTrie<String, Type>)>,
-    StringMatch(string_match): StringMatch,
     Depth(depth): Depth,
     funcs: &mut TokenStream,
 ) -> TokenStream {
@@ -465,11 +430,7 @@ fn build(
         );
     }
 
-    let iter = if string_match {
-        quote!(str)
-    } else {
-        quote!([u8])
-    };
+    let iter = quote!([u8]);
 
     let mut head = TokenStream::new();
     let mut body = TokenStream::new();
@@ -489,14 +450,8 @@ fn build(
 
         let name = format!("{}_{}", fname, i);
         let fident = ident(&name);
-        let children = build(
-            &name,
-            tree.children_with_keys(),
-            StringMatch(string_match),
-            Depth(depth + 1),
-            funcs,
-        );
-        let (pat, len) = pat(label, StringMatch(string_match));
+        let children = build(&name, tree.children_with_keys(), Depth(depth + 1), funcs);
+        let (pat, len) = pat(label);
         let mut func = Func::new(fident.clone(), len, iter.clone());
 
         // Exception rules
