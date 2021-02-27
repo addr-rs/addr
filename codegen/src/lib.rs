@@ -6,58 +6,22 @@ use psl_lexer::{List, Type};
 use quote::quote;
 use quote::TokenStreamExt;
 use sequence_trie::SequenceTrie;
-use std::collections::HashSet;
 use std::env;
+use std::path::Path;
+use std::str::FromStr;
 
-pub fn compile_psl() -> proc_macro2::TokenStream {
-    let labels = quote!(domain.rsplit(|x| *x == b'.'));
-    let iter = quote!([u8]);
-
+pub fn compile_psl<P: AsRef<Path>>(path: P) -> proc_macro2::TokenStream {
     let mut funcs = TokenStream::new();
-    let body = process(&mut funcs);
+    let body = process(&mut funcs, path);
 
     quote! {
-            use crate::{Psl, Type, Info};
-
-            /// Access to the compiled native list
-            #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
-            pub struct List;
-
-            impl List {
-                /// Creates an instance of a new list
-                #[inline]
-                pub fn new() -> Self {
-                    Self
-                }
-            }
-
-            impl Psl for List {
-                fn find(&self, domain: &[u8]) -> Info {
-                    let mut info = Info { len: 0, typ: None };
-
-                    let mut labels = #labels;
-
-                    let fqdn = if domain.ends_with(b".") {
-                        labels.next();
-                        true
-                    } else {
-                        false
-                    };
-
-                    info = lookup(labels, info);
-
-                    if fqdn && info.len > 0 {
-                        info.len += 1;
-                    }
-
-                    info
-                }
-            }
+            use crate::{Type, Info};
 
             #[inline]
-            fn lookup<'a, T>(mut labels: T, mut info: Info) -> Info
-                where T: Iterator<Item=&'a #iter>
+            pub(super) fn lookup<'a, T>(mut labels: T) -> Info
+                where T: Iterator<Item=&'a [u8]>
             {
+                let mut info = Info { len: 0, typ: None };
                 match labels.next() {
                     Some(label) => {
                         match label {
@@ -75,9 +39,10 @@ pub fn compile_psl() -> proc_macro2::TokenStream {
 #[derive(Debug, Clone, Copy)]
 struct Depth(usize);
 
-fn process(funcs: &mut TokenStream) -> TokenStream {
-    let mut list =
-        List::fetch().unwrap_or_else(|error| panic!("failed to download the list: {}", error));
+fn process<P: AsRef<Path>>(funcs: &mut TokenStream, path: P) -> TokenStream {
+    let data = psl_lexer::request(psl_lexer::LIST_URL).expect("failed to download the list");
+    std::fs::write(path, &data).expect("failed to write the list to disk");
+    let mut list = List::from_str(&data).expect("failed to build the list");
 
     let mut tlds = Vec::new();
     for key in &["PSL_TLD", "PSL_TLDS"] {
@@ -125,40 +90,6 @@ fn process(funcs: &mut TokenStream) -> TokenStream {
     }
 
     build("lookup", tree.children_with_keys(), Depth(0), funcs)
-}
-
-// See https://www.reddit.com/r/rust/comments/91h6t8/generating_all_possible_case_variations_of_a/e2yw7qp/
-// Thanks /u/ErichDonGubler!
-fn all_cases(string: &str) -> HashSet<String> {
-    let num_chars = string.chars().count();
-    assert!(num_chars < 4, "found label `{}`: `anycase` feature currently supports labels with 3 characters or less only", string);
-
-    let num_cases = usize::pow(2, num_chars as u32);
-    let mut cases = HashSet::with_capacity(num_cases);
-
-    let (upper, lower) = string.chars().fold(
-        (Vec::with_capacity(num_chars), Vec::with_capacity(num_chars)),
-        |(mut upper, mut lower), c| {
-            upper.push(c.to_uppercase().to_string());
-            lower.push(c.to_lowercase().to_string());
-            (upper, lower)
-        },
-    );
-
-    let len = string.len();
-    for i in 0..num_cases {
-        let mut s = String::with_capacity(len);
-        for idx in 0..num_chars {
-            if (i & (1 << idx)) == 0 {
-                s.push_str(&lower[idx])
-            } else {
-                s.push_str(&upper[idx])
-            }
-        }
-        cases.insert(s);
-    }
-
-    cases
 }
 
 #[derive(Debug, Clone)]
@@ -354,28 +285,10 @@ fn pat(label: &str) -> (TokenStream, TokenStream) {
     let len = label.len();
     if label == "_" {
         (quote!(wild), quote!(wild.len()))
-    } else if cfg!(feature = "anycase") {
-        let cases = all_cases(label).into_iter();
-        let pats = cases.map(|x| array_expr(&x)).map(|pat| quote!(#pat));
-        (pat_opts(pats), quote!(#len))
     } else {
         let pat = array_expr(label);
         (quote!(#pat), quote!(#len))
     }
-}
-
-fn pat_opts<T>(opts: T) -> TokenStream
-where
-    T: Iterator<Item = TokenStream>,
-{
-    let mut pat = TokenStream::new();
-    for (i, x) in opts.enumerate() {
-        if i > 0 {
-            pat.append_all(quote!(|));
-        }
-        pat.append_all(x);
-    }
-    pat
 }
 
 fn build(
@@ -385,13 +298,7 @@ fn build(
     funcs: &mut TokenStream,
 ) -> TokenStream {
     if list.is_empty() && depth == 0 && !cfg!(test) {
-        panic!(
-            "
-                Found empty list. This implementation doesn't support empty lists.
-                If you do want one, you can easily implement the trait `psl::Psl`
-                by merely putting `None` in the body.
-            "
-        );
+        panic!("Found empty list. This implementation doesn't support empty lists.");
     }
 
     let iter = quote!([u8]);

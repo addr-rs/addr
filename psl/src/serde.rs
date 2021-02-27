@@ -1,8 +1,8 @@
-use crate::{Domain, List, Psl, Suffix};
+use crate::{domain, suffix, Domain, Suffix};
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-impl<'a> Serialize for Domain<'a> {
+impl Serialize for Domain<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -11,23 +11,23 @@ impl<'a> Serialize for Domain<'a> {
     }
 }
 
-impl<'a> Deserialize<'a> for Domain<'a> {
+impl<'de> Deserialize<'de> for Domain<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'a>,
+        D: Deserializer<'de>,
     {
-        let input = <&'a str as Deserialize<'a>>::deserialize(deserializer)?;
-        match List.domain(input) {
-            Some(domain) => Ok(domain),
-            None => {
-                let invalid = Unexpected::Str(input);
+        let input = Deserialize::deserialize(deserializer)?;
+        match domain(input) {
+            Some(domain) if domain.as_bytes() == input => Ok(domain),
+            _ => {
+                let invalid = Unexpected::Bytes(input);
                 Err(Error::invalid_value(invalid, &"a domain name"))
             }
         }
     }
 }
 
-impl<'a> Serialize for Suffix<'a> {
+impl Serialize for Suffix<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -36,16 +36,16 @@ impl<'a> Serialize for Suffix<'a> {
     }
 }
 
-impl<'a> Deserialize<'a> for Suffix<'a> {
+impl<'de> Deserialize<'de> for Suffix<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'a>,
+        D: Deserializer<'de>,
     {
-        let input = <&'a str as Deserialize<'a>>::deserialize(deserializer)?;
-        match List.suffix(input) {
-            Some(suffix) => Ok(suffix),
-            None => {
-                let invalid = Unexpected::Str(input);
+        let input = Deserialize::deserialize(deserializer)?;
+        match suffix(input) {
+            Some(suffix) if suffix.as_bytes() == input => Ok(suffix),
+            _ => {
+                let invalid = Unexpected::Bytes(input);
                 Err(Error::invalid_value(invalid, &"a domain suffix"))
             }
         }

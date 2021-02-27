@@ -1,7 +1,7 @@
 [package]
 name = "psl-lexer"
 description = "A lexer for Mozilla's Public Suffix List"
-version = "0.2.2"
+version = "0.3.0"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr/tree/master/lexer"
 documentation = "https://docs.rs/psl-lexer"
@@ -16,6 +16,7 @@ remote_list = ["native-tls"]
 
 [dependencies]
 error-chain = "0.12.4"
+indexmap = "1.6.1"
 url = "2.2.1"
 
 [dependencies.native-tls]

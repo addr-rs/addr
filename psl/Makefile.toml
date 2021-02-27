@@ -2,24 +2,26 @@
 env = { "CARGO_MAKE_RUST_SCRIPT_PROVIDER" = "cargo-play" }
 script_runner = "@rust"
 script = '''
-//# psl-codegen = "0.6.0"
+//# psl-codegen = "0.9.0"
 
 fn main() {
-    let list = format!("
+    let list = psl_codegen::compile_psl("data/public_suffix_list.dat");
+
+    let module = format!("
         #![allow(clippy::all)] // TODO lint this code?
 
         // WARNING: Auto-generated code. Any changes in this file will be overwritten.
 
-        {}", psl_codegen::compile_psl());
+        {}", list);
 
-    std::fs::write("src/list.rs", list).unwrap();
+    std::fs::write("src/list.rs", module).unwrap();
 }
 '''
 
 [tasks.format]
 install_crate = "rustfmt"
 command = "cargo"
-args = ["fmt", "--", "--emit=files"]
+args = ["fmt"]
 dependencies = ["compile-list"]
 
 [tasks.check]

@@ -1,16 +1,14 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::{env, mem};
+use std::{env, mem, str};
 
-use psl::{List, Psl};
+use psl::Type;
 use psl_lexer::request;
 use rspec::report::ExampleResult;
 
 #[test]
 fn list_behaviour() {
-    let list = List::new();
-
     rspec::run(&rspec::describe("the official test", (), |ctx| {
         let tests = "https://raw.githubusercontent.com/publicsuffix/list/master/tests/tests.txt";
         let body = request(tests).unwrap_or_else(|_| {
@@ -79,10 +77,11 @@ fn list_behaviour() {
                         if input.starts_with(".") || input.contains("..") {
                             (None, None)
                         } else {
-                            list.domain(&input.to_lowercase())
+                            psl::domain(input.to_lowercase().as_bytes())
                                 .map(|d| {
-                                    let domain = d.to_string();
-                                    let suffix = d.suffix().to_string();
+                                    let domain = str::from_utf8(d.as_bytes()).unwrap().to_string();
+                                    let suffix =
+                                        str::from_utf8(d.suffix().as_bytes()).unwrap().to_string();
                                     (Some(domain), Some(suffix))
                                 })
                                 .unwrap_or((None, None))
@@ -115,7 +114,7 @@ fn list_behaviour() {
         }
     }));
 
-    rspec::run(&rspec::describe("extra tests", (), |ctx| {
+    rspec::run(&rspec::describe("suffix tests", (), |ctx| {
         let extra = vec![
             (
                 "gp-id-ter-acc-1.to.gp-kl-cas-11-ses001-ses-1.wdsl.5m.za",
@@ -127,6 +126,8 @@ fn list_behaviour() {
             ("bar.platformsh.site", "bar.platformsh.site"),
             ("platform.sh", "sh"),
             ("sh", "sh"),
+            (".", "."),
+            ("example.com.", "com."),
         ];
 
         for (input, expected) in extra {
@@ -134,18 +135,67 @@ fn list_behaviour() {
                 continue;
             }
             ctx.when(msg(format!("input is `{}`", input)), |ctx| {
-                let expected_suffix = Some(expected.to_owned());
+                let expected_suffix = Some(expected);
                 ctx.it(
-                    msg(format!("means the suffix {}", val(&expected_suffix))),
+                    msg(format!(
+                        "means the suffix {}",
+                        val(&expected_suffix.map(ToString::to_string))
+                    )),
                     move |_| {
-                        let domain = list.suffix(input).unwrap();
-                        let found_suffix = Some(domain.to_string());
-                        if expected_suffix == found_suffix {
+                        let suffix = psl::suffix(input.as_bytes()).unwrap();
+                        if suffix.as_bytes() == expected.as_bytes() {
                             ExampleResult::Success
                         } else {
                             let msg = format!(
                                 "expected `{:?}` but found `{:?}`",
-                                expected_suffix, found_suffix
+                                expected_suffix,
+                                Some(str::from_utf8(suffix.as_bytes()).unwrap().to_string())
+                            );
+                            ExampleResult::Failure(Some(msg))
+                        }
+                    },
+                );
+            });
+        }
+    }));
+
+    rspec::run(&rspec::describe("suffix type tests", (), |ctx| {
+        let extra = vec![
+            (
+                "gp-id-ter-acc-1.to.gp-kl-cas-11-ses001-ses-1.wdsl.5m.za",
+                false,
+                None,
+            ),
+            ("yokohama.jp", true, Some(Type::Icann)),
+            ("kobe.jp", true, Some(Type::Icann)),
+            ("foo.bar.platformsh.site", true, Some(Type::Private)),
+            ("bar.platformsh.site", true, Some(Type::Private)),
+            ("platform.sh", true, Some(Type::Icann)),
+            ("sh", true, Some(Type::Icann)),
+            (".", false, None),
+            ("example.gafregsrse", false, None),
+        ];
+
+        for (input, known_suffix, typ) in extra {
+            if !expected_tld(input) {
+                continue;
+            }
+            ctx.when(msg(format!("input is `{}`", input)), |ctx| {
+                ctx.it(
+                    msg(format!(
+                        "means known suffix {}",
+                        val(&Some(known_suffix.to_string()))
+                    )),
+                    move |_| {
+                        let suffix = psl::suffix(input.as_bytes()).unwrap();
+                        assert_eq!(suffix.typ(), typ);
+                        if suffix.is_known() == known_suffix {
+                            ExampleResult::Success
+                        } else {
+                            let msg = format!(
+                                "expected `{:?}` but found `{:?}`",
+                                known_suffix,
+                                suffix.is_known()
                             );
                             ExampleResult::Failure(Some(msg))
                         }

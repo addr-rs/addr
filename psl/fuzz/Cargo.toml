@@ -20,12 +20,6 @@ path = ".."
 members = ["."]
 
 [[bin]]
-name = "find"
-path = "fuzz_targets/find.rs"
-test = false
-doc = false
-
-[[bin]]
 name = "suffix"
 path = "fuzz_targets/suffix.rs"
 test = false

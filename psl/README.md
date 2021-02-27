@@ -1,13 +1,9 @@
 # A native Rust library for Mozilla's Public Suffix List
 
 ```rust
-extern crate psl;
+let suffix = psl::suffix(b"www.example.com")?;
+assert_eq!(suffix.as_bytes(), b"com");
 
-use psl::{Psl, List};
-
-let list = List::new();
-
-let suffix = list.suffix("example.com")?;
-
-let domain = list.domain("example.com")?;
+let domain = psl::domain(b"www.example.com")?;
+assert_eq!(domain.as_bytes(), b"example.com");
 ```

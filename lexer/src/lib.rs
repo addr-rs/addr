@@ -32,7 +32,6 @@ pub mod errors;
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 #[cfg(feature = "remote_list")]
@@ -41,12 +40,14 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::path::Path;
 use std::str;
+use std::str::FromStr;
 #[cfg(feature = "remote_list")]
 use std::time::Duration;
 
 pub use errors::{Error, Result};
 
 use errors::ErrorKind;
+use indexmap::IndexMap;
 #[cfg(feature = "remote_list")]
 use native_tls::TlsConnector;
 use url::Url;
@@ -73,7 +74,7 @@ pub enum Type {
 /// `fetch` or `from_url` to download updates at least once a week.
 #[derive(Debug)]
 pub struct List {
-    pub rules: HashMap<String, Vec<Suffix>>,
+    pub rules: IndexMap<String, Vec<Suffix>>,
 }
 
 /// Converts a type into a Url object
@@ -105,7 +106,6 @@ impl IntoUrl for String {
     }
 }
 
-#[doc(hidden)]
 #[cfg(feature = "remote_list")]
 pub fn request<U: IntoUrl>(u: U) -> Result<String> {
     let url = u.into_url()?;
@@ -166,46 +166,10 @@ impl List {
             })
     }
 
-    fn build(res: &str) -> Result<List> {
-        let mut typ = None;
-        let mut list = List {
-            rules: HashMap::new(),
-        };
-        for line in res.lines() {
-            match line {
-                line if line.contains("BEGIN ICANN DOMAINS") => {
-                    typ = Some(Type::Icann);
-                }
-                line if line.contains("BEGIN PRIVATE DOMAINS") => {
-                    typ = Some(Type::Private);
-                }
-                line if line.starts_with("//") => {
-                    continue;
-                }
-                line => match typ {
-                    Some(typ) => {
-                        let rule = match line.split_whitespace().next() {
-                            Some(rule) => rule,
-                            None => continue,
-                        };
-                        list.append(rule, typ)?;
-                    }
-                    None => {
-                        continue;
-                    }
-                },
-            }
-        }
-        if list.rules.is_empty() || list.all().is_empty() {
-            return Err(ErrorKind::InvalidList.into());
-        }
-        Ok(list)
-    }
-
     /// Pull the list from a URL
     #[cfg(feature = "remote_list")]
     pub fn from_url<U: IntoUrl>(url: U) -> Result<List> {
-        request(url).and_then(|list| Self::build(&list))
+        request(url).and_then(|list| Self::from_str(&list))
     }
 
     /// Fetch the list from a local file
@@ -215,7 +179,7 @@ impl List {
             .and_then(|mut data| {
                 let mut res = String::new();
                 data.read_to_string(&mut res)?;
-                Self::build(&res)
+                Self::from_str(&res)
             })
     }
 
@@ -227,7 +191,7 @@ impl List {
     pub fn from_reader<R: Read>(mut reader: R) -> Result<List> {
         let mut res = String::new();
         reader.read_to_string(&mut res)?;
-        Self::build(&res)
+        Self::from_str(&res)
     }
 
     /// Pull the list from the official URL
@@ -275,5 +239,45 @@ impl List {
                 }
                 res
             })
+    }
+}
+
+impl FromStr for List {
+    type Err = Error;
+
+    fn from_str(res: &str) -> Result<Self> {
+        let mut typ = None;
+        let mut list = List {
+            rules: IndexMap::new(),
+        };
+        for line in res.lines() {
+            match line {
+                line if line.contains("BEGIN ICANN DOMAINS") => {
+                    typ = Some(Type::Icann);
+                }
+                line if line.contains("BEGIN PRIVATE DOMAINS") => {
+                    typ = Some(Type::Private);
+                }
+                line if line.starts_with("//") => {
+                    continue;
+                }
+                line => match typ {
+                    Some(typ) => {
+                        let rule = match line.split_whitespace().next() {
+                            Some(rule) => rule,
+                            None => continue,
+                        };
+                        list.append(rule, typ)?;
+                    }
+                    None => {
+                        continue;
+                    }
+                },
+            }
+        }
+        if list.rules.is_empty() || list.all().is_empty() {
+            return Err(ErrorKind::InvalidList.into());
+        }
+        Ok(list)
     }
 }
