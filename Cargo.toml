@@ -1,5 +1,5 @@
 [workspace]
-members = ["psl", "codegen", "lexer"]
+members = ["codegen", "lexer"]
 
 [package]
 name = "addr"
@@ -22,10 +22,7 @@ error-chain = "0.12.4"
 regex = "1.4.3"
 lazy_static = "1.4.0"
 idna = "0.2.2"
-
-[dependencies.psl]
-version = "0.6"
-path = "./psl"
+psl = "0.6"
 
 [dev-dependencies]
 rspec = "1.0.0"
