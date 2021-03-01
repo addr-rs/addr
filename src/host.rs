@@ -3,8 +3,8 @@ use std::fmt;
 use std::net::IpAddr;
 use std::str::FromStr;
 
-use errors::{Error, ErrorKind, Result};
-use {DomainName, Host};
+use crate::errors::{Error, ErrorKind, Result};
+use crate::{DomainName, Host};
 
 impl FromStr for Host {
     type Err = Error;

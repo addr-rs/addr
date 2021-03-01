@@ -6,8 +6,6 @@
   ## Examples
 
   ```rust
-  extern crate addr;
-
   use addr::{DomainName, DnsName, Email};
   # use addr::Result;
 
@@ -48,14 +46,7 @@
 #![recursion_limit = "1024"]
 
 #[macro_use]
-extern crate error_chain;
-extern crate psl;
-#[macro_use]
 extern crate rental;
-#[macro_use]
-extern crate lazy_static;
-extern crate idna;
-extern crate regex;
 
 mod dns_impls;
 mod domain_impls;

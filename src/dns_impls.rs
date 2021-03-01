@@ -3,18 +3,18 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use errors::ErrorKind;
-use parser::{parse_domain, to_targetcase};
+use crate::errors::ErrorKind;
+use crate::parser::{parse_domain, to_targetcase};
+use crate::DnsName;
 use psl::{self, List, Psl};
-use DnsName;
 
-pub use errors::{Error, Result};
+pub use crate::errors::{Error, Result};
 
 impl FromStr for DnsName {
     type Err = Error;
 
     fn from_str(input: &str) -> Result<Self> {
-        use inner::Dns;
+        use crate::inner::Dns;
         let full = to_targetcase(input);
         let inner = Dns::try_new_or_drop(full, |full| match List::new().domain(&full) {
             Some(root) => {

@@ -8,6 +8,7 @@ documentation = "https://docs.rs/addr"
 readme = "README.md"
 keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
+edition = "2018"
 
 [dependencies]
 rental = "0.5.5"

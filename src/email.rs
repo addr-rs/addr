@@ -1,11 +1,11 @@
 use std::fmt;
 use std::str::FromStr;
 
-use errors::{Error, ErrorKind, Result};
+use crate::errors::{Error, ErrorKind, Result};
+use crate::{Email, Host};
 use regex::RegexSet;
-use {Email, Host};
 
-lazy_static! {
+lazy_static::lazy_static! {
     // Regex for matching the local-part of an
     // email address
     static ref LOCAL: RegexSet = {

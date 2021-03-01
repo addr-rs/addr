@@ -1,8 +1,4 @@
-extern crate psl;
-#[macro_use]
-extern crate criterion;
-
-use criterion::Criterion;
+use criterion::{criterion_group, criterion_main, Criterion};
 use psl::{List, Psl};
 
 fn psl(c: &mut Criterion) {

@@ -9,8 +9,6 @@ You can supply your own list by setting the environment variable `PSL_URL` or `P
 ## Examples
 
 ```rust
-extern crate addr;
-
 use addr::{DomainName, DnsName, Email, Result};
 
 fn main() -> Result<()> {

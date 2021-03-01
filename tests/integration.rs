@@ -1,7 +1,3 @@
-extern crate addr;
-extern crate psl;
-extern crate rspec;
-
 use std::str::FromStr;
 
 use addr::errors::ErrorKind;

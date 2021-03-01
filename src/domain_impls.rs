@@ -3,16 +3,16 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use errors::{Error, ErrorKind, Result};
-use parser::parse_domain;
+use crate::errors::{Error, ErrorKind, Result};
+use crate::parser::parse_domain;
+use crate::DomainName;
 use psl::{self, List, Psl};
-use DomainName;
 
 impl FromStr for DomainName {
     type Err = Error;
 
     fn from_str(input: &str) -> Result<Self> {
-        use inner::Domain;
+        use crate::inner::Domain;
         match parse_domain(input) {
             Ok(domain) => {
                 let inner = Domain::try_new_or_drop(domain, |full| match List.domain(&full) {

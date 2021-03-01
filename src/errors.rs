@@ -1,6 +1,6 @@
 //! Errors returned by this library
 
-error_chain! {
+error_chain::error_chain! {
     errors {
         NoHost { }
 
