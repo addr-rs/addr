@@ -3,9 +3,9 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use crate::errors::{Error, ErrorKind, Result};
 use crate::parser::parse_domain;
 use crate::DomainName;
+use crate::{Error, Result};
 use psl::{self, List, Psl};
 
 impl FromStr for DomainName {
@@ -17,11 +17,11 @@ impl FromStr for DomainName {
             Ok(domain) => {
                 let inner = Domain::try_new_or_drop(domain, |full| match List.domain(&full) {
                     Some(root) => Ok(root),
-                    None => Err(Error::from(ErrorKind::InvalidDomain(input.into()))),
+                    None => Err(Error::InvalidDomain(input.into())),
                 })?;
                 Ok(DomainName { inner })
             }
-            Err(_) => Err(ErrorKind::InvalidDomain(input.into()).into()),
+            Err(_) => Err(Error::InvalidDomain(input.into())),
         }
     }
 }

@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
-use addr::errors::ErrorKind;
-use addr::{DnsName, DomainName, Email, Host};
+use addr::{DnsName, Error, DomainName, Email, Host};
 use psl::{List, Psl};
 
 #[test]
@@ -23,8 +22,8 @@ fn addr_parsing() {
 
         ctx.it("should not allow more than 1 trailing dot", move |_| {
             assert!(DomainName::from_str("example.com..").is_err());
-            match *DomainName::from_str("example.com..").unwrap_err().kind() {
-                ErrorKind::InvalidDomain(ref domain) => assert_eq!(domain, "example.com.."),
+            match DomainName::from_str("example.com..").unwrap_err() {
+                Error::InvalidDomain(domain) => assert_eq!(domain, "example.com.."),
                 _ => assert!(false),
             }
         });
@@ -173,8 +172,8 @@ fn addr_parsing() {
 
         ctx.it("should not allow more than 1 trailing dot", move |_| {
             assert!(DnsName::from_str("example.com..").is_err());
-            match *DnsName::from_str("example.com..").unwrap_err().kind() {
-                ErrorKind::InvalidDomain(ref domain) => assert_eq!(domain, "example.com.."),
+            match DnsName::from_str("example.com..").unwrap_err() {
+                Error::InvalidDomain(domain) => assert_eq!(domain, "example.com.."),
                 _ => assert!(false),
             }
         });

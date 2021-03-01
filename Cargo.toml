@@ -12,7 +12,6 @@ edition = "2018"
 
 [dependencies]
 rental = "0.5.5"
-error-chain = "0.12.4"
 regex = "1.4.3"
 lazy_static = "1.4.0"
 idna = "0.2.2"

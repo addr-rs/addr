@@ -1,8 +1,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::errors::{Error, ErrorKind, Result};
 use crate::{Email, Host};
+use crate::{Error, Result};
 use regex::RegexSet;
 
 lazy_static::lazy_static! {
@@ -53,13 +53,13 @@ impl FromStr for Email {
         let host = match parts.next() {
             Some(host) => host,
             None => {
-                return Err(ErrorKind::InvalidEmail.into());
+                return Err(Error::InvalidEmail);
             }
         };
         let local = match parts.next() {
             Some(local) => local,
             None => {
-                return Err(ErrorKind::InvalidEmail.into());
+                return Err(Error::InvalidEmail);
             }
         };
         if local.chars().count() > 64
@@ -67,7 +67,7 @@ impl FromStr for Email {
             || (!local.starts_with('"') && local.contains(".."))
             || !LOCAL.is_match(local)
         {
-            return Err(ErrorKind::InvalidEmail.into());
+            return Err(Error::InvalidEmail);
         }
         let host = Host::from_str(host)?;
         let name = local.to_owned();

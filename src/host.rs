@@ -3,8 +3,8 @@ use std::fmt;
 use std::net::IpAddr;
 use std::str::FromStr;
 
-use crate::errors::{Error, ErrorKind, Result};
 use crate::{DomainName, Host};
+use crate::{Error, Result};
 
 impl FromStr for Host {
     type Err = Error;
@@ -23,7 +23,7 @@ impl FromStr for Host {
         if let Ok(ip) = IpAddr::from_str(host) {
             return Ok(Host::Ip(ip));
         }
-        Err(ErrorKind::InvalidHost.into())
+        Err(Error::InvalidHost)
     }
 }
 

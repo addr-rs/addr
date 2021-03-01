@@ -57,7 +57,9 @@ mod parser;
 
 use std::net::IpAddr;
 
-pub use errors::{Error, Result};
+pub use errors::Error;
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 rental! {
     mod inner {
