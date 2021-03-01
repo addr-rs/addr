@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use addr::{DnsName, Error, DomainName, Email, Host};
+use addr::{DnsName, DomainName, Email, Error, Host};
 use psl::{List, Psl};
 
 #[test]

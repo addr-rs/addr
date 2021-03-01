@@ -11,7 +11,6 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 edition = "2018"
 
 [dependencies]
-rental = "0.5.5"
 regex = "1.4.3"
 lazy_static = "1.4.0"
 idna = "0.2.2"

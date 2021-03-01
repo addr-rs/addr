@@ -14,23 +14,23 @@
     // or extension of any given domain name
     let domain: DomainName = "www.example.com".parse().unwrap();
     assert_eq!(domain.root(), "example.com");
-    assert_eq!(domain.root().suffix(), "com");
+    assert_eq!(domain.suffix(), "com");
 
     let domain: DomainName = "www.食狮.中国".parse().unwrap();
     assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
-    assert_eq!(domain.root().suffix(), "xn--fiqs8s");
+    assert_eq!(domain.suffix(), "xn--fiqs8s");
 
     let domain: DomainName = "www.xn--85x722f.xn--55qx5d.cn".parse().unwrap();
     assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
-    assert_eq!(domain.root().suffix(), "xn--55qx5d.cn");
+    assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
     let domain: DomainName = "a.b.example.uk.com".parse().unwrap();
     assert_eq!(domain.root(), "example.uk.com");
-    assert_eq!(domain.root().suffix(), "uk.com");
+    assert_eq!(domain.suffix(), "uk.com");
 
     let name: DnsName = "_tcp.example.com.".parse().unwrap();
     assert_eq!(name.root(), "example.com.");
-    assert_eq!(name.root().suffix(), "com.");
+    assert_eq!(name.suffix(), "com.");
 
     let email: Email = "чебурашка@ящик-с-апельсинами.рф".parse().unwrap();
     assert_eq!(email.user(), "чебурашка");
@@ -38,15 +38,12 @@
 
     // In any case if the domain's suffix is in the list
     // then this is definately a registrable domain name
-    assert!(domain.root().suffix().is_known());
+    assert!(domain.suffix_is_known());
   # }
   ```
 !*/
 
 #![recursion_limit = "1024"]
-
-#[macro_use]
-extern crate rental;
 
 mod dns_impls;
 mod domain_impls;
@@ -61,21 +58,21 @@ pub use errors::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-rental! {
-    mod inner {
-        use psl::Domain as Root;
+mod inner {
+    #[derive(Debug)]
+    pub struct Domain {
+        pub full: String,
+        pub root_offset: usize,
+        pub suffix_offset: usize,
+        pub suffix_is_known: bool,
+    }
 
-        #[rental(debug)]
-        pub struct Domain {
-            full: String,
-            root: Root<'full>,
-        }
-
-        #[rental(debug)]
-        pub struct Dns {
-            full: String,
-            root: Root<'full>,
-        }
+    #[derive(Debug)]
+    pub struct Dns {
+        pub full: String,
+        pub root_offset: usize,
+        pub suffix_offset: usize,
+        pub suffix_is_known: bool,
     }
 }
 

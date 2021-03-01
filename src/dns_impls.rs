@@ -15,27 +15,45 @@ impl FromStr for DnsName {
     fn from_str(input: &str) -> Result<Self> {
         use crate::inner::Dns;
         let full = to_targetcase(input);
-        let inner = Dns::try_new_or_drop(full, |full| match List::new().domain(&full) {
+        let (root_offset, suffix_offset, suffix_is_known) = match List::new().domain(&full) {
             Some(root) => {
-                if parse_domain(root.to_str()).is_err() {
+                let root_str = root.to_str();
+                if parse_domain(root_str).is_err() {
                     return Err(Error::InvalidDomain(input.into()));
                 }
-                Ok(root)
+                let root_offset = full.len() - root_str.len();
+                let suffix_offset = full.len() - root.suffix().to_str().len();
+                (root_offset, suffix_offset, root.suffix().is_known())
             }
-            None => Err(Error::InvalidDomain(input.into())),
-        })?;
+            None => {
+                return Err(Error::InvalidDomain(input.into()));
+            }
+        };
+        let inner = Dns {
+            full,
+            root_offset,
+            suffix_offset,
+            suffix_is_known,
+        };
         Ok(DnsName { inner })
     }
 }
 
 impl DnsName {
     pub fn as_str(&self) -> &str {
-        self.inner.head()
+        &self.inner.full
     }
 
-    pub fn root(&self) -> psl::Domain<'_> {
-        let rental = unsafe { self.inner.all_erased() };
-        *rental.root
+    pub fn root(&self) -> &str {
+        &self.inner.full[self.inner.root_offset..]
+    }
+
+    pub fn suffix(&self) -> &str {
+        &self.inner.full[self.inner.suffix_offset..]
+    }
+
+    pub fn suffix_is_known(&self) -> bool {
+        self.inner.suffix_is_known
     }
 }
 
