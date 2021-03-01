@@ -76,11 +76,7 @@ pub fn parse_domain(input: &str) -> Result<String, String> {
 
 #[inline]
 pub fn to_targetcase(input: &str) -> String {
-    if cfg!(feature = "anycase") {
-        input.to_owned()
-    } else {
-        input.to_ascii_lowercase()
-    }
+    input.to_ascii_lowercase()
 }
 
 #[cfg(test)]

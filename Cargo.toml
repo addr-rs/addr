@@ -9,10 +9,6 @@ readme = "README.md"
 keywords = ["tld", "gtld", "cctld", "domain", "psl"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 
-[features]
-# Experimental and currently limited to labels with 3 octects or less
-anycase = []
-
 [dependencies]
 rental = "0.5.5"
 error-chain = "0.12.4"
