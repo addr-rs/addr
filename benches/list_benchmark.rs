@@ -1,17 +1,17 @@
-use addr::DomainName;
+use addr::domain::Name;
+use core::convert::TryFrom;
 use criterion::{criterion_group, criterion_main, Criterion};
-use psl::{List, Psl};
 
 fn psl(c: &mut Criterion) {
     c.bench_function("psl", |b| {
         b.iter(|| {
-            List.domain("example.com").unwrap();
+            psl::domain(b"example.com").unwrap();
         })
     });
 
     c.bench_function("addr", |b| {
         b.iter(|| {
-            DomainName::parse_str("example.com").unwrap();
+            Name::try_from("example.com").unwrap();
         })
     });
 }

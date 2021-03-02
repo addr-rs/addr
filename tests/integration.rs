@@ -1,11 +1,8 @@
 use addr::{dns, domain};
 use core::convert::TryFrom;
-use psl::{List, Psl};
 
 #[test]
 fn addr_parsing() {
-    let list = List::new();
-
     rspec::run(&rspec::given("a domain", (), |ctx| {
         ctx.it("should allow non-fully qualified domain names", move |_| {
             assert!(domain::Name::try_from("example.com").is_ok())
@@ -23,33 +20,21 @@ fn addr_parsing() {
             assert!(domain::Name::try_from("example.com..").is_err());
         });
 
-        ctx.it(
-            "should allow a single label with a single trailing dot",
-            move |_| {
-                assert!(list.suffix("com.").is_some());
-            },
-        );
-
-        ctx.it(
-            "should always have a suffix for single-label domains",
-            move |_| {
-                let domains = vec![
-                    // real TLDs
-                    "com",
-                    "saarland",
-                    "museum.",
-                    // non-existant TLDs
-                    "localhost",
-                    "madeup",
-                    "with-dot.",
-                ];
-                for domain in domains {
-                    let suffix = list.suffix(domain).unwrap();
-                    assert_eq!(suffix, domain);
-                    assert!(list.domain(domain).is_none());
-                }
-            },
-        );
+        ctx.it("should not be a single-label domain", move |_| {
+            let domains = vec![
+                // real TLDs
+                "com",
+                "saarland",
+                "museum.",
+                // non-existant TLDs
+                "localhost",
+                "madeup",
+                "with-dot.",
+            ];
+            for domain in domains {
+                assert!(domain::Name::try_from(domain).is_err());
+            }
+        });
 
         ctx.it(
             "should not have the same result with or without the trailing dot",

@@ -44,6 +44,8 @@
 pub mod dns;
 pub mod domain;
 mod parser;
+#[cfg(feature = "serde")]
+mod serde;
 
 use core::fmt;
 

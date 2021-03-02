@@ -11,7 +11,12 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 edition = "2018"
 
 [dependencies]
-psl = "0.6"
+psl = "1.0.0"
+
+[dependencies.serde]
+version = "1.0.123"
+default-features = false
+optional = true
 
 [dev-dependencies]
 rspec = "1.0.0"
