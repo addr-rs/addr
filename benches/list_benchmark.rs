@@ -11,7 +11,7 @@ fn psl(c: &mut Criterion) {
 
     c.bench_function("addr", |b| {
         b.iter(|| {
-            "example.com".parse::<DomainName>().unwrap();
+            DomainName::parse_str("example.com").unwrap();
         })
     });
 }

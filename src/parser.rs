@@ -1,11 +1,11 @@
-use idna::domain_to_ascii;
+use crate::{Error, Result};
 
 static MAX_DOMAIN_LEN: usize = 253;
 static MAX_LABELS_COUNT: usize = 127;
 static MAX_LABEL_LEN: usize = 63;
 
 #[inline]
-fn maybe_tld(input: &str) -> bool {
+fn is_tld(input: &str) -> bool {
     !gt_max_label_len(input) && input.parse::<f64>().is_err()
 }
 
@@ -19,13 +19,9 @@ fn gt_max_label_len(label: &str) -> bool {
 // http://blog.sacaluta.com/2011/12/dns-domain-names-253-or-255-bytesoctets.html
 // https://blogs.msdn.microsoft.com/oldnewthing/20120412-00/?p=7873/
 #[inline]
-pub fn parse_domain(input: &str) -> Result<String, String> {
-    let punycode = if input.is_ascii() {
-        to_targetcase(input)
-    } else if let Ok(punycode) = domain_to_ascii(input) {
-        punycode
-    } else {
-        return Err(to_targetcase(input));
+pub fn parse_domain(punycode: &str) -> Result<()> {
+    if !punycode.is_ascii() {
+        return Err(Error::NotAscii);
     };
     let is_valid = {
         let punycode = if punycode.ends_with('.') {
@@ -38,10 +34,10 @@ pub fn parse_domain(input: &str) -> Result<String, String> {
         if punycode.len() > MAX_DOMAIN_LEN || labels.clone().count() > MAX_LABELS_COUNT {
             false
         } else {
-            let first_maybe_tld = labels.clone().next().map(maybe_tld);
+            let first_is_tld = labels.clone().next().map(is_tld);
             // check individual labels
-            if first_maybe_tld == Some(false)
-                || first_maybe_tld.is_none()
+            if first_is_tld == Some(false)
+                || first_is_tld.is_none()
                 || labels.clone().any(gt_max_label_len)
             {
                 false
@@ -68,15 +64,10 @@ pub fn parse_domain(input: &str) -> Result<String, String> {
         }
     };
     if is_valid {
-        Ok(punycode)
+        Ok(())
     } else {
-        Err(punycode)
+        Err(Error::InvalidDomain)
     }
-}
-
-#[inline]
-pub fn to_targetcase(input: &str) -> String {
-    input.to_ascii_lowercase()
 }
 
 #[cfg(test)]
@@ -85,7 +76,7 @@ mod tests {
 
     #[test]
     fn invalid_tld() {
-        assert!(!maybe_tld("1234"));
+        assert!(!is_tld("1234"));
     }
 
     #[test]

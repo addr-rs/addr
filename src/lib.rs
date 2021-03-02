@@ -6,96 +6,61 @@
   ## Examples
 
   ```rust
-  use addr::{DomainName, DnsName, Email};
-  # use addr::Result;
+  use addr::{dns, domain};
+  use core::convert::TryFrom;
 
-  # fn main() {
-    // You can find out the root domain
-    // or extension of any given domain name
-    let domain: DomainName = "www.example.com".parse().unwrap();
-    assert_eq!(domain.root(), "example.com");
-    assert_eq!(domain.suffix(), "com");
+  // You can find out the root domain
+  // or extension of any given domain name
+  let domain = domain::Name::try_from("www.example.com").unwrap();
+  assert_eq!(domain.root(), "example.com");
+  assert_eq!(domain.suffix(), "com");
 
-    let domain: DomainName = "www.食狮.中国".parse().unwrap();
-    assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
-    assert_eq!(domain.suffix(), "xn--fiqs8s");
+  let punycode = idna::domain_to_ascii("www.食狮.中国").unwrap();
+  let domain = domain::Name::try_from(punycode.as_str()).unwrap();
+  assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
+  assert_eq!(domain.suffix(), "xn--fiqs8s");
 
-    let domain: DomainName = "www.xn--85x722f.xn--55qx5d.cn".parse().unwrap();
-    assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
-    assert_eq!(domain.suffix(), "xn--55qx5d.cn");
+  let domain = domain::Name::try_from("www.xn--85x722f.xn--55qx5d.cn").unwrap();
+  assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
+  assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
-    let domain: DomainName = "a.b.example.uk.com".parse().unwrap();
-    assert_eq!(domain.root(), "example.uk.com");
-    assert_eq!(domain.suffix(), "uk.com");
+  let domain = domain::Name::try_from("a.b.example.uk.com").unwrap();
+  assert_eq!(domain.root(), "example.uk.com");
+  assert_eq!(domain.suffix(), "uk.com");
 
-    let name: DnsName = "_tcp.example.com.".parse().unwrap();
-    assert_eq!(name.root(), "example.com.");
-    assert_eq!(name.suffix(), "com.");
+  let name = dns::Name::try_from("_tcp.example.com.").unwrap();
+  assert_eq!(name.root(), "example.com.");
+  assert_eq!(name.suffix(), "com.");
 
-    let email: Email = "чебурашка@ящик-с-апельсинами.рф".parse().unwrap();
-    assert_eq!(email.user(), "чебурашка");
-    assert_eq!(email.host(), "xn-----8kcayoeblonkwzf2jqc1b.xn--p1ai");
-
-    // In any case if the domain's suffix is in the list
-    // then this is definately a registrable domain name
-    assert!(domain.suffix_is_known());
-  # }
+  // In any case if the domain's suffix is in the list
+  // then this is definately a registrable domain name
+  assert!(domain.suffix_is_known());
   ```
 !*/
 
-#![recursion_limit = "1024"]
+#![no_std]
+#![forbid(unsafe_code)]
 
-mod dns_impls;
-mod domain_impls;
-mod email;
-pub mod errors;
-mod host;
+pub mod dns;
+pub mod domain;
 mod parser;
 
-use std::net::IpAddr;
+use core::fmt;
 
-pub use errors::Error;
+pub type Result<T> = core::result::Result<T, Error>;
 
-pub type Result<T> = std::result::Result<T, Error>;
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Error {
+    NotAscii,
+    InvalidDomain,
+}
 
-mod inner {
-    #[derive(Debug)]
-    pub struct Domain {
-        pub full: String,
-        pub root_offset: usize,
-        pub suffix_offset: usize,
-        pub suffix_is_known: bool,
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let error = match self {
+            Error::NotAscii => "domain is not in ascii",
+            Error::InvalidDomain => "invalid domain name",
+        };
+        write!(f, "{}", error)
     }
-
-    #[derive(Debug)]
-    pub struct Dns {
-        pub full: String,
-        pub root_offset: usize,
-        pub suffix_offset: usize,
-        pub suffix_is_known: bool,
-    }
-}
-
-#[derive(Debug)]
-pub struct DomainName {
-    inner: inner::Domain,
-}
-
-/// Holds information about a particular DNS name
-#[derive(Debug)]
-pub struct DnsName {
-    inner: inner::Dns,
-}
-
-/// Holds information about a particular host
-#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub enum Host {
-    Ip(IpAddr),
-    Domain(DomainName),
-}
-
-#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct Email {
-    name: String,
-    host: Host,
 }
