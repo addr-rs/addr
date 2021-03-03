@@ -53,15 +53,31 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Error {
-    NotAscii,
+    DomainNotAscii,
+    DomainTooLong,
+    EmptyLabel,
+    IllegalCharacter,
     InvalidDomain,
+    LabelEndNotAlnum,
+    LabelStartNotAlnum,
+    LabelTooLong,
+    NumericTld,
+    TooManyLabels,
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let error = match self {
-            Error::NotAscii => "domain is not in ascii",
+            Error::DomainNotAscii => "domain not ascii",
+            Error::DomainTooLong => "domain too long",
+            Error::EmptyLabel => "domain contains empty label",
+            Error::IllegalCharacter => "domain contains illegal characters",
             Error::InvalidDomain => "invalid domain name",
+            Error::LabelEndNotAlnum => "label does not start with an alphanumeric character",
+            Error::LabelStartNotAlnum => "label does not end with a alphanumeric character",
+            Error::LabelTooLong => "label too long",
+            Error::NumericTld => "numeric TLD",
+            Error::TooManyLabels => "too many labels",
         };
         write!(f, "{}", error)
     }
