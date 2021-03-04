@@ -1,4 +1,4 @@
-use addr::{domain, dns};
+use addr::{dns, domain};
 use criterion::{criterion_group, criterion_main, Criterion};
 
 fn psl(c: &mut Criterion) {

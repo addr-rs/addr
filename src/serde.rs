@@ -1,4 +1,4 @@
-use crate::{dns, domain};
+use crate::{dns, domain, email};
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -34,6 +34,28 @@ impl Serialize for dns::Name<'_> {
 }
 
 impl<'de> Deserialize<'de> for dns::Name<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let input = <&str>::deserialize(deserializer)?;
+        Self::parse(input).map_err(|_| {
+            let invalid = Unexpected::Str(input);
+            Error::invalid_value(invalid, &"a DNS name")
+        })
+    }
+}
+
+impl Serialize for email::Address<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for email::Address<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,

@@ -19,7 +19,7 @@ fn addr_parsing() {
             assert!(domain::Name::parse("example.com..").is_err());
         });
 
-        ctx.it("should not be a single-label domain", move |_| {
+        ctx.it("should allow single-label domains", move |_| {
             let domains = vec![
                 // real TLDs
                 "com",
@@ -31,7 +31,7 @@ fn addr_parsing() {
                 "with-dot.",
             ];
             for domain in domains {
-                assert!(domain::Name::parse(domain).is_err());
+                assert!(domain::Name::parse(domain).is_ok());
             }
         });
 

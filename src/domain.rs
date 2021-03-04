@@ -1,18 +1,22 @@
-use crate::parser::parse_domain;
-use crate::{Error, Result};
+use crate::{matcher, Error, Result};
 use core::fmt;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Name<'a> {
     full: &'a str,
-    root: psl::Domain<'a>,
+    suffix: psl::Suffix<'a>,
 }
 
 impl<'a> Name<'a> {
     pub fn parse(name: &'a str) -> Result<Name<'a>> {
-        parse_domain(name)?;
+        let stripped = name.strip_suffix('.').unwrap_or(name);
+        if stripped.contains('.') {
+            matcher::is_domain_name(stripped)?;
+        } else {
+            matcher::is_label(stripped, true)?;
+        }
         Ok(Self {
-            root: psl::domain(name.as_bytes()).ok_or(Error::InvalidDomain)?,
+            suffix: psl::suffix(name.as_bytes()).ok_or(Error::InvalidDomain)?,
             full: name,
         })
     }
@@ -21,31 +25,36 @@ impl<'a> Name<'a> {
         &self.full
     }
 
-    pub fn root(&self) -> &str {
-        let offset = self.full.len() - self.root.as_bytes().len();
-        &self.full[offset..]
+    pub fn root(&self) -> Option<&str> {
+        let suffix = self.suffix();
+        let offset = self
+            .full
+            .strip_suffix(suffix)?
+            .strip_suffix('.')?
+            .rfind('.')
+            .map(|x| x + 1)
+            .unwrap_or(0);
+        self.full.get(offset..)
     }
 
     pub fn suffix(&self) -> &str {
-        let offset = self.full.len() - self.root.suffix().as_bytes().len();
+        let offset = self.full.len() - self.suffix.as_bytes().len();
         &self.full[offset..]
     }
 
     pub fn has_known_suffix(&self) -> bool {
-        self.root.suffix().is_known()
+        self.suffix.is_known()
     }
 
     pub fn is_icann(&self) -> bool {
-        self.root
-            .suffix()
+        self.suffix
             .typ()
             .filter(|t| *t == psl::Type::Icann)
             .is_some()
     }
 
     pub fn is_private(&self) -> bool {
-        self.root
-            .suffix()
+        self.suffix
             .typ()
             .filter(|t| *t == psl::Type::Private)
             .is_some()

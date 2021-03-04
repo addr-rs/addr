@@ -1,5 +1,4 @@
-use crate::parser::parse_dns;
-use crate::Result;
+use crate::{matcher, Result};
 use core::{fmt, str};
 use psl::Suffix;
 
@@ -12,7 +11,7 @@ pub struct Name<'a> {
 
 impl<'a> Name<'a> {
     pub fn parse(name: &'a str) -> Result<Name<'a>> {
-        parse_dns(name)?;
+        matcher::is_dns_name(name)?;
         Ok(Self {
             full: name,
             suffix: psl::suffix(name.as_bytes()),

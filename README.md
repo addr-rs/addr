@@ -13,19 +13,19 @@ fn main() -> addr::Result<()> {
     // You can find out the root domain
     // or extension of any given domain name
     let domain = domain::Name::parse("www.example.com")?;
-    assert_eq!(domain.root(), "example.com");
+    assert_eq!(domain.root(), Some("example.com"));
     assert_eq!(domain.suffix(), "com");
 
     let domain = domain::Name::parse("www.食狮.中国")?;
-    assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
+    assert_eq!(domain.root(), Some("xn--85x722f.xn--fiqs8s"));
     assert_eq!(domain.suffix(), "xn--fiqs8s");
 
     let domain = domain::Name::parse("www.xn--85x722f.xn--55qx5d.cn")?;
-    assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
+    assert_eq!(domain.root(), Some("xn--85x722f.xn--55qx5d.cn"));
     assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
     let domain = domain::Name::parse("a.b.example.uk.com")?;
-    assert_eq!(domain.root(), "example.uk.com");
+    assert_eq!(domain.root(), Some("example.uk.com"));
     assert_eq!(domain.suffix(), "uk.com");
 
     let name = dns::Name::parse("_tcp.example.com.")?;
