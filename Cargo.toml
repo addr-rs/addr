@@ -1,7 +1,7 @@
 [package]
 name = "addr"
 description = "A library for parsing domain names"
-version = "0.6.2-alpha.0"
+version = "0.7.0-alpha.0"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr"
 documentation = "https://docs.rs/addr"
@@ -11,7 +11,7 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 edition = "2018"
 
 [dependencies]
-psl = "1.0.3"
+psl = "1.0.4"
 
 [dependencies.serde]
 version = "1.0.123"
