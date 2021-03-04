@@ -23,6 +23,18 @@ impl<'a> Name<'a> {
         &self.full
     }
 
+    pub fn root(&self) -> Option<&str> {
+        let suffix = self.suffix()?;
+        let offset = self
+            .full
+            .strip_suffix(suffix)?
+            .strip_suffix('.')?
+            .rfind('.')
+            .map(|x| x + 1)
+            .unwrap_or(0);
+        self.full.get(offset..)
+    }
+
     pub fn suffix(&self) -> Option<&str> {
         let bytes = self.suffix.as_ref()?.as_bytes();
         str::from_utf8(bytes).ok()

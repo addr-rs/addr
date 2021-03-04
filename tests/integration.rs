@@ -127,14 +127,20 @@ fn addr_parsing() {
         });
 
         ctx.it(
-            "should allow extracting the correct suffix where possible",
+            "should allow extracting the correct root and suffix where possible",
             move |_| {
                 let names = vec![
-                    ("_tcp.example.com.", Some("com.")),
-                    ("_telnet._tcp.example.com.", Some("com.")),
+                    ("_tcp.example.com.", Some("example.com."), Some("com.")),
+                    (
+                        "_telnet._tcp.example.com.",
+                        Some("example.com."),
+                        Some("com."),
+                    ),
+                    ("example.com", Some("example.com"), Some("com")),
                 ];
-                for (input, suffix) in names {
+                for (input, root, suffix) in names {
                     let name = dns::Name::parse(input).unwrap();
+                    assert_eq!(name.root(), root);
                     assert_eq!(name.suffix(), suffix);
                 }
             },
