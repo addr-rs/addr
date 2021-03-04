@@ -11,4 +11,4 @@ os:
   - osx
 
 script:
-  - cargo test
+  - cargo test --all-features

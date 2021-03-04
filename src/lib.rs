@@ -6,35 +6,39 @@
   ## Examples
 
   ```rust
-  use addr::{dns, domain};
+  # fn main() -> addr::Result<()> {
+  use addr::{dns, domain, Error};
   use core::convert::TryFrom;
 
   // You can find out the root domain
   // or extension of any given domain name
-  let domain = domain::Name::try_from("www.example.com").unwrap();
+  let domain = domain::Name::try_from("www.example.com")?;
   assert_eq!(domain.root(), "example.com");
   assert_eq!(domain.suffix(), "com");
 
-  let punycode = idna::domain_to_ascii("www.食狮.中国").unwrap();
-  let domain = domain::Name::try_from(punycode.as_str()).unwrap();
+  let punycode = idna::domain_to_ascii("www.食狮.中国")
+    .map_err(|_| Error::InvalidDomain)?;
+  let domain = domain::Name::try_from(punycode.as_str())?;
   assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
   assert_eq!(domain.suffix(), "xn--fiqs8s");
 
-  let domain = domain::Name::try_from("www.xn--85x722f.xn--55qx5d.cn").unwrap();
+  let domain = domain::Name::try_from("www.xn--85x722f.xn--55qx5d.cn")?;
   assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
   assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
-  let domain = domain::Name::try_from("a.b.example.uk.com").unwrap();
+  let domain = domain::Name::try_from("a.b.example.uk.com")?;
   assert_eq!(domain.root(), "example.uk.com");
   assert_eq!(domain.suffix(), "uk.com");
 
-  let name = dns::Name::try_from("_tcp.example.com.").unwrap();
+  let name = dns::Name::try_from("_tcp.example.com.")?;
   assert_eq!(name.root(), "example.com.");
   assert_eq!(name.suffix(), "com.");
 
   // In any case if the domain's suffix is in the list
   // then this is definately a registrable domain name
   assert!(domain.suffix_is_known());
+  # Ok(())
+  # }
   ```
 !*/
 
@@ -51,7 +55,8 @@ use core::fmt;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[non_exhaustive]
 pub enum Error {
     DomainNotAscii,
     DomainTooLong,
