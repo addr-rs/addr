@@ -29,6 +29,7 @@ fn main() -> addr::Result<()> {
     assert_eq!(domain.suffix(), "uk.com");
 
     let name = dns::Name::parse("_tcp.example.com.")?;
+    assert_eq!(name.root(), Some("example.com."));
     assert_eq!(name.suffix(), Some("com."));
 
     // In any case if the domain's suffix is in the list
