@@ -1,5 +1,4 @@
 use crate::{dns, domain};
-use core::convert::TryFrom;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -18,7 +17,7 @@ impl<'de> Deserialize<'de> for domain::Name<'de> {
         D: Deserializer<'de>,
     {
         let input = <&str>::deserialize(deserializer)?;
-        Self::try_from(input).map_err(|_| {
+        Self::parse(input).map_err(|_| {
             let invalid = Unexpected::Str(input);
             Error::invalid_value(invalid, &"a domain name")
         })
@@ -40,7 +39,7 @@ impl<'de> Deserialize<'de> for dns::Name<'de> {
         D: Deserializer<'de>,
     {
         let input = <&str>::deserialize(deserializer)?;
-        Self::try_from(input).map_err(|_| {
+        Self::parse(input).map_err(|_| {
             let invalid = Unexpected::Str(input);
             Error::invalid_value(invalid, &"a DNS name")
         })

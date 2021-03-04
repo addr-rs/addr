@@ -8,30 +8,28 @@ This library uses Mozilla's [Public Suffix List](https://publicsuffix.org) to re
 
 ```rust
 use addr::{dns, domain};
-use core::convert::TryFrom;
 
 fn main() -> addr::Result<()> {
     // You can find out the root domain
     // or extension of any given domain name
-    let domain = domain::Name::try_from("www.example.com")?;
+    let domain = domain::Name::parse("www.example.com")?;
     assert_eq!(domain.root(), "example.com");
     assert_eq!(domain.suffix(), "com");
 
-    let domain = domain::Name::try_from("www.食狮.中国")?;
+    let domain = domain::Name::parse("www.食狮.中国")?;
     assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
     assert_eq!(domain.suffix(), "xn--fiqs8s");
 
-    let domain = domain::Name::try_from("www.xn--85x722f.xn--55qx5d.cn")?;
+    let domain = domain::Name::parse("www.xn--85x722f.xn--55qx5d.cn")?;
     assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
     assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
-    let domain = domain::Name::try_from("a.b.example.uk.com")?;
+    let domain = domain::Name::parse("a.b.example.uk.com")?;
     assert_eq!(domain.root(), "example.uk.com");
     assert_eq!(domain.suffix(), "uk.com");
 
-    let name = dns::Name::try_from("_tcp.example.com.")?;
-    assert_eq!(name.root(), "example.com.");
-    assert_eq!(name.suffix(), "com.");
+    let name = dns::Name::parse("_tcp.example.com.")?;
+    assert_eq!(name.suffix(), Some("com."));
 
     // In any case if the domain's suffix is in the list
     // then this is definately a registrable domain name

@@ -1,24 +1,24 @@
 use crate::{Error, Result};
 
-static MAX_DOMAIN_LEN: usize = 253;
-static MAX_LABELS_COUNT: usize = 127;
-static MAX_LABEL_LEN: usize = 63;
+const MAX_DOMAIN_LEN: usize = 253;
+const MAX_LABELS_COUNT: usize = 127;
+const MAX_LABEL_LEN: usize = 63;
 
 /// Check if a domain has valid syntax
 // https://en.wikipedia.org/wiki/Domain_name#Domain_name_syntax
 // http://blog.sacaluta.com/2011/12/dns-domain-names-253-or-255-bytesoctets.html
 // https://blogs.msdn.microsoft.com/oldnewthing/20120412-00/?p=7873/
 #[inline]
-pub fn parse_domain(punycode: &str) -> Result<()> {
-    if !punycode.is_ascii() {
+pub(crate) fn parse_domain(name: &str) -> Result<()> {
+    if !name.is_ascii() {
         return Err(Error::DomainNotAscii);
     }
 
-    let domain = punycode.strip_suffix('.').unwrap_or(punycode);
+    let domain = name.strip_suffix('.').unwrap_or(name);
 
     // check total lengths
     if domain.len() > MAX_DOMAIN_LEN {
-        return Err(Error::DomainTooLong);
+        return Err(Error::NameTooLong);
     }
 
     let dot_count = domain.matches('.').count();
@@ -52,6 +52,33 @@ pub fn parse_domain(punycode: &str) -> Result<()> {
 
         if label.contains(|c: char| c != '-' && !c.is_alphanumeric()) {
             return Err(Error::IllegalCharacter);
+        }
+    }
+
+    Ok(())
+}
+
+// https://tools.ietf.org/html/rfc2181#section-11
+#[inline]
+pub(crate) fn parse_dns(name: &str) -> Result<()> {
+    if name.is_empty() {
+        return Err(Error::EmptyName);
+    }
+
+    if name.contains("..") {
+        return Err(Error::EmptyLabel);
+    }
+
+    let domain = name.strip_suffix('.').unwrap_or(name);
+
+    // check total lengths
+    if domain.len() > MAX_DOMAIN_LEN {
+        return Err(Error::NameTooLong);
+    }
+
+    for label in domain.split('.') {
+        if label.len() > MAX_LABEL_LEN {
+            return Err(Error::LabelTooLong);
         }
     }
 

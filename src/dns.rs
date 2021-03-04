@@ -1,59 +1,51 @@
-use crate::parser::parse_domain;
-use crate::{Error, Result};
-use core::convert::TryFrom;
-use core::fmt;
+use crate::parser::parse_dns;
+use crate::Result;
+use core::{fmt, str};
+use psl::Suffix;
 
 /// Holds information about a particular DNS name
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Name<'a> {
     full: &'a str,
-    root: psl::Domain<'a>,
+    suffix: Option<Suffix<'a>>,
 }
 
-impl<'a> TryFrom<&'a str> for Name<'a> {
-    type Error = Error;
-
-    fn try_from(punycode: &'a str) -> Result<Self> {
-        let name = Self {
-            root: psl::domain(punycode.as_bytes()).ok_or(Error::InvalidDomain)?,
-            full: punycode,
-        };
-        parse_domain(name.root())?;
-        Ok(name)
+impl<'a> Name<'a> {
+    pub fn parse(name: &'a str) -> Result<Name<'a>> {
+        parse_dns(name)?;
+        Ok(Self {
+            full: name,
+            suffix: psl::suffix(name.as_bytes()),
+        })
     }
-}
 
-impl Name<'_> {
     pub fn as_str(&self) -> &str {
         &self.full
     }
 
-    pub fn root(&self) -> &str {
-        let offset = self.full.len() - self.root.as_bytes().len();
-        &self.full[offset..]
-    }
-
-    pub fn suffix(&self) -> &str {
-        let offset = self.full.len() - self.root.suffix().as_bytes().len();
-        &self.full[offset..]
+    pub fn suffix(&self) -> Option<&str> {
+        let bytes = self.suffix.as_ref()?.as_bytes();
+        str::from_utf8(bytes).ok()
     }
 
     pub fn suffix_is_known(&self) -> bool {
-        self.root.suffix().is_known()
+        self.suffix.as_ref().map(Suffix::is_known).unwrap_or(false)
     }
 
     pub fn is_icann(&self) -> bool {
-        self.root
-            .suffix()
-            .typ()
+        self.suffix
+            .as_ref()
+            .map(Suffix::typ)
+            .flatten()
             .filter(|t| *t == psl::Type::Icann)
             .is_some()
     }
 
     pub fn is_private(&self) -> bool {
-        self.root
-            .suffix()
-            .typ()
+        self.suffix
+            .as_ref()
+            .map(Suffix::typ)
+            .flatten()
             .filter(|t| *t == psl::Type::Private)
             .is_some()
     }

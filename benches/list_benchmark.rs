@@ -1,5 +1,4 @@
 use addr::domain::Name;
-use core::convert::TryFrom;
 use criterion::{criterion_group, criterion_main, Criterion};
 
 fn psl(c: &mut Criterion) {
@@ -11,7 +10,7 @@ fn psl(c: &mut Criterion) {
 
     c.bench_function("addr", |b| {
         b.iter(|| {
-            Name::try_from("example.com").unwrap();
+            Name::parse("example.com").unwrap();
         })
     });
 }

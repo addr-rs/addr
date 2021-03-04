@@ -8,31 +8,29 @@
   ```rust
   # fn main() -> addr::Result<()> {
   use addr::{dns, domain, Error};
-  use core::convert::TryFrom;
 
   // You can find out the root domain
   // or extension of any given domain name
-  let domain = domain::Name::try_from("www.example.com")?;
+  let domain = domain::Name::parse("www.example.com")?;
   assert_eq!(domain.root(), "example.com");
   assert_eq!(domain.suffix(), "com");
 
-  let punycode = idna::domain_to_ascii("www.食狮.中国")
+  let name = idna::domain_to_ascii("www.食狮.中国")
     .map_err(|_| Error::InvalidDomain)?;
-  let domain = domain::Name::try_from(punycode.as_str())?;
+  let domain = domain::Name::parse(name.as_str())?;
   assert_eq!(domain.root(), "xn--85x722f.xn--fiqs8s");
   assert_eq!(domain.suffix(), "xn--fiqs8s");
 
-  let domain = domain::Name::try_from("www.xn--85x722f.xn--55qx5d.cn")?;
+  let domain = domain::Name::parse("www.xn--85x722f.xn--55qx5d.cn")?;
   assert_eq!(domain.root(), "xn--85x722f.xn--55qx5d.cn");
   assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
-  let domain = domain::Name::try_from("a.b.example.uk.com")?;
+  let domain = domain::Name::parse("a.b.example.uk.com")?;
   assert_eq!(domain.root(), "example.uk.com");
   assert_eq!(domain.suffix(), "uk.com");
 
-  let name = dns::Name::try_from("_tcp.example.com.")?;
-  assert_eq!(name.root(), "example.com.");
-  assert_eq!(name.suffix(), "com.");
+  let name = dns::Name::parse("_tcp.example.com.")?;
+  assert_eq!(name.suffix(), Some("com."));
 
   // In any case if the domain's suffix is in the list
   // then this is definately a registrable domain name
@@ -59,8 +57,9 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[non_exhaustive]
 pub enum Error {
     DomainNotAscii,
-    DomainTooLong,
+    NameTooLong,
     EmptyLabel,
+    EmptyName,
     IllegalCharacter,
     InvalidDomain,
     LabelEndNotAlnum,
@@ -74,8 +73,9 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let error = match self {
             Error::DomainNotAscii => "domain not ascii",
-            Error::DomainTooLong => "domain too long",
+            Error::NameTooLong => "name too long",
             Error::EmptyLabel => "domain contains empty label",
+            Error::EmptyName => "name is empty",
             Error::IllegalCharacter => "domain contains illegal characters",
             Error::InvalidDomain => "invalid domain name",
             Error::LabelEndNotAlnum => "label does not start with an alphanumeric character",

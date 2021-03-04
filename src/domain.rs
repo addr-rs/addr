@@ -1,6 +1,5 @@
 use crate::parser::parse_domain;
 use crate::{Error, Result};
-use core::convert::TryFrom;
 use core::fmt;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -9,19 +8,15 @@ pub struct Name<'a> {
     root: psl::Domain<'a>,
 }
 
-impl<'a> TryFrom<&'a str> for Name<'a> {
-    type Error = Error;
-
-    fn try_from(punycode: &'a str) -> Result<Self> {
-        parse_domain(punycode)?;
+impl<'a> Name<'a> {
+    pub fn parse(name: &'a str) -> Result<Name<'a>> {
+        parse_domain(name)?;
         Ok(Self {
-            root: psl::domain(punycode.as_bytes()).ok_or(Error::InvalidDomain)?,
-            full: punycode,
+            root: psl::domain(name.as_bytes()).ok_or(Error::InvalidDomain)?,
+            full: name,
         })
     }
-}
 
-impl Name<'_> {
     pub fn as_str(&self) -> &str {
         &self.full
     }
