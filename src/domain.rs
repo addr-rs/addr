@@ -31,7 +31,7 @@ impl<'a> Name<'a> {
         &self.full[offset..]
     }
 
-    pub fn suffix_is_known(&self) -> bool {
+    pub fn has_known_suffix(&self) -> bool {
         self.root.suffix().is_known()
     }
 

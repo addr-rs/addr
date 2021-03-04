@@ -40,7 +40,7 @@ impl<'a> Name<'a> {
         str::from_utf8(bytes).ok()
     }
 
-    pub fn suffix_is_known(&self) -> bool {
+    pub fn has_known_suffix(&self) -> bool {
         self.suffix.as_ref().map(Suffix::is_known).unwrap_or(false)
     }
 

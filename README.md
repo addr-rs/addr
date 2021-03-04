@@ -34,7 +34,7 @@ fn main() -> addr::Result<()> {
 
     // In any case if the domain's suffix is in the list
     // then this is definately a registrable domain name
-    assert!(domain.suffix_is_known());
+    assert!(domain.has_known_suffix());
 }
 ```
 
@@ -42,7 +42,7 @@ fn main() -> addr::Result<()> {
 
 For those who work with domain names the use cases of this library are plenty. [publicsuffix.org/learn](https://publicsuffix.org/learn/) lists quite a few. For the sake of brevity, I'm not going to repeat them here. I work for a domain registrar so we make good use of this library. Here are some of the ways this library can be used:
 
-* Validating domain names. This one is probably obvious. If a `domain.suffix_is_known()` you can be absolutely sure this is a valid domain name. A regular expression is simply not robust enough.
+* Validating domain names. This one is probably obvious. If a `domain.has_known_suffix()` you can be absolutely sure this is a valid domain name. A regular expression is simply not robust enough.
 * Blacklisting or whitelisting domain names. You can't just blindly do this without knowing the actual registrable domain name otherwise you risk being too restrictive or too lenient. Bad news either way...
 * Extracting the registrable part of a domain name so you can check whether the domain is registered or not.
 * Storing details about a domain name in a DBMS using the registrable part of a domain name as the primary key.

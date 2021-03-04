@@ -34,7 +34,7 @@
 
   // In any case if the domain's suffix is in the list
   // then this is definately a registrable domain name
-  assert!(domain.suffix_is_known());
+  assert!(domain.has_known_suffix());
   # Ok(())
   # }
   ```
