@@ -17,7 +17,7 @@ email = ["no-std-net"]
 [dependencies]
 psl = "1.0.4"
 no-std-net = { version = "0.5.0", default-features = false, optional = true }
-serde = { version = "1.0.123", default-features = false, optional = true }
+serde = { version = "1.0.124", default-features = false, optional = true }
 
 [dev-dependencies]
 rspec = "1.0.0"
