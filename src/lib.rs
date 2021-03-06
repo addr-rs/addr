@@ -43,12 +43,12 @@
 
 pub mod dns;
 pub mod domain;
-#[cfg(feature = "email")]
+#[cfg(any(feature = "net", feature = "serde-net"))]
 pub mod email;
 mod matcher;
-#[cfg(feature = "email")]
+#[cfg(any(feature = "net", feature = "serde-net"))]
 pub mod net;
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde-net"))]
 mod serde;
 
 use core::fmt;

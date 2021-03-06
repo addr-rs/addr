@@ -18,7 +18,7 @@ impl<'a> Name<'a> {
         })
     }
 
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         &self.full
     }
 
@@ -39,26 +39,28 @@ impl<'a> Name<'a> {
         str::from_utf8(bytes).ok()
     }
 
-    pub fn has_known_suffix(&self) -> bool {
-        self.suffix.as_ref().map(Suffix::is_known).unwrap_or(false)
+    pub const fn has_known_suffix(&self) -> bool {
+        if let Some(suffix) = self.suffix {
+            suffix.is_known()
+        } else {
+            false
+        }
     }
 
-    pub fn is_icann(&self) -> bool {
-        self.suffix
-            .as_ref()
-            .map(Suffix::typ)
-            .flatten()
-            .filter(|t| *t == psl::Type::Icann)
-            .is_some()
+    pub const fn is_icann(&self) -> bool {
+        if let Some(suffix) = self.suffix {
+            matches!(suffix.typ(), Some(psl::Type::Icann))
+        } else {
+            false
+        }
     }
 
-    pub fn is_private(&self) -> bool {
-        self.suffix
-            .as_ref()
-            .map(Suffix::typ)
-            .flatten()
-            .filter(|t| *t == psl::Type::Private)
-            .is_some()
+    pub const fn is_private(&self) -> bool {
+        if let Some(suffix) = self.suffix {
+            matches!(suffix.typ(), Some(psl::Type::Icann))
+        } else {
+            false
+        }
     }
 }
 

@@ -10,12 +10,6 @@ pub struct Address<'a> {
     host: Host<'a>,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub enum Host<'a> {
-    Domain(Name<'a>),
-    IpAddr(IpAddr),
-}
-
 impl<'a> Address<'a> {
     pub fn parse(address: &'a str) -> Result<Address<'a>> {
         if address.chars().count() > 254 {
@@ -25,16 +19,7 @@ impl<'a> Address<'a> {
         let local = address.get(..at_sign).ok_or(Error::NoUserPart)?;
         matcher::is_email_local(local)?;
         let rest = address.get(at_sign + 1..).ok_or(Error::NoHostPart)?;
-        let host = match rest.strip_prefix('[') {
-            Some(h) => {
-                let ip_addr = h
-                    .strip_suffix(']')
-                    .ok_or(Error::IllegalCharacter)?
-                    .parse()?;
-                Host::IpAddr(ip_addr)
-            }
-            None => Host::Domain(Name::parse(rest)?),
-        };
+        let host = Host::parse(rest)?;
         Ok(Self {
             host,
             at_sign,
@@ -42,11 +27,11 @@ impl<'a> Address<'a> {
         })
     }
 
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         &self.full
     }
 
-    pub fn host(&self) -> Host<'a> {
+    pub const fn host(&self) -> Host<'a> {
         self.host
     }
 
@@ -58,6 +43,27 @@ impl<'a> Address<'a> {
 impl fmt::Display for Address<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.full)
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum Host<'a> {
+    Domain(Name<'a>),
+    IpAddr(IpAddr),
+}
+
+impl<'a> Host<'a> {
+    pub(crate) fn parse(host: &'a str) -> Result<Host<'a>> {
+        match host.strip_prefix('[') {
+            Some(h) => {
+                let ip_addr = h
+                    .strip_suffix(']')
+                    .ok_or(Error::IllegalCharacter)?
+                    .parse()?;
+                Ok(Host::IpAddr(ip_addr))
+            }
+            None => Ok(Host::Domain(Name::parse(host)?)),
+        }
     }
 }
 

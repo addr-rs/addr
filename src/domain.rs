@@ -21,7 +21,7 @@ impl<'a> Name<'a> {
         })
     }
 
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         &self.full
     }
 
@@ -42,22 +42,16 @@ impl<'a> Name<'a> {
         &self.full[offset..]
     }
 
-    pub fn has_known_suffix(&self) -> bool {
+    pub const fn has_known_suffix(&self) -> bool {
         self.suffix.is_known()
     }
 
-    pub fn is_icann(&self) -> bool {
-        self.suffix
-            .typ()
-            .filter(|t| *t == psl::Type::Icann)
-            .is_some()
+    pub const fn is_icann(&self) -> bool {
+        matches!(self.suffix.typ(), Some(psl::Type::Icann))
     }
 
-    pub fn is_private(&self) -> bool {
-        self.suffix
-            .typ()
-            .filter(|t| *t == psl::Type::Private)
-            .is_some()
+    pub const fn is_private(&self) -> bool {
+        matches!(self.suffix.typ(), Some(psl::Type::Private))
     }
 }
 
