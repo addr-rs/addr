@@ -1,4 +1,4 @@
-use addr::{dns, domain};
+use addr::{DnsName, DomainName};
 use criterion::{criterion_group, criterion_main, Criterion};
 
 fn psl(c: &mut Criterion) {
@@ -14,15 +14,15 @@ fn psl(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("addr::domain::Name::parse", |b| {
+    c.bench_function("addr::DomainName::parse", |b| {
         b.iter(|| {
-            domain::Name::parse("example.com").unwrap();
+            DomainName::parse("example.com").unwrap();
         })
     });
 
-    c.bench_function("addr::dns::Name::parse", |b| {
+    c.bench_function("addr::DnsName::parse", |b| {
         b.iter(|| {
-            dns::Name::parse("_example.com").unwrap();
+            DnsName::parse("_example.com").unwrap();
         })
     });
 }

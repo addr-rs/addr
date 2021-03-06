@@ -10,12 +10,8 @@ const MAX_LABEL_LEN: usize = 63;
 // https://blogs.msdn.microsoft.com/oldnewthing/20120412-00/?p=7873/
 #[inline]
 pub(crate) fn is_domain_name(domain: &str) -> Result<()> {
-    if !domain.is_ascii() {
-        return Err(Error::DomainNotAscii);
-    }
-
     // check total lengths
-    if domain.len() > MAX_DOMAIN_LEN {
+    if domain.chars().count() > MAX_DOMAIN_LEN {
         return Err(Error::NameTooLong);
     }
 
@@ -33,13 +29,11 @@ pub(crate) fn is_domain_name(domain: &str) -> Result<()> {
 }
 
 pub(crate) fn is_label(label: &str, label_is_tld: bool) -> Result<()> {
-    let len = label.len();
-
-    if label.trim().is_empty() {
+    if label.is_empty() {
         return Err(Error::EmptyLabel);
     }
 
-    if len > MAX_LABEL_LEN {
+    if label.chars().count() > MAX_LABEL_LEN {
         return Err(Error::LabelTooLong);
     }
 
@@ -89,12 +83,13 @@ pub(crate) fn is_dns_name(name: &str) -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "email")]
 pub(crate) fn is_email_local(local: &str) -> Result<()> {
     let mut chars = local.chars();
 
     let first = chars.next().ok_or(Error::NoUserPart)?;
 
-    let last_index = chars.clone().count();
+    let last_index = chars.clone().count().max(1) - 1;
 
     if last_index > MAX_LABEL_LEN {
         return Err(Error::EmailLocalTooLong);
@@ -131,6 +126,7 @@ pub(crate) fn is_email_local(local: &str) -> Result<()> {
 
 // these characters can be anywhere in the expresion
 // [[:alnum:]!#$%&'*+/=?^_`{|}~-]
+#[cfg(feature = "email")]
 fn is_global(c: char) -> bool {
     c.is_ascii_alphanumeric()
         || c == '-'
@@ -154,10 +150,12 @@ fn is_global(c: char) -> bool {
         || c == '~'
 }
 
+#[cfg(feature = "email")]
 fn is_non_ascii(c: char) -> bool {
     c as u32 > 0x7f // non-ascii characters (can also be unquoted)
 }
 
+#[cfg(feature = "email")]
 fn is_quoted(c: char) -> bool {
     // ["(),\\:;<>@\[\]. ]
     c == '"'
@@ -176,6 +174,7 @@ fn is_quoted(c: char) -> bool {
         || c == ']'
 }
 
+#[cfg(feature = "email")]
 fn is_combined(c: char) -> bool {
     is_global(c) || is_non_ascii(c)
 }

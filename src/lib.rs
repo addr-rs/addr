@@ -7,29 +7,27 @@
 
   ```rust
   # fn main() -> addr::Result<()> {
-  use addr::{dns, domain, Error};
+  use addr::{DnsName, DomainName, Error};
 
   // You can find out the root domain
   // or extension of any given domain name
-  let domain = domain::Name::parse("www.example.com")?;
+  let domain = DomainName::parse("www.example.com")?;
   assert_eq!(domain.root(), Some("example.com"));
   assert_eq!(domain.suffix(), "com");
 
-  let name = idna::domain_to_ascii("www.食狮.中国")
-    .map_err(|_| Error::InvalidDomain)?;
-  let domain = domain::Name::parse(name.as_str())?;
-  assert_eq!(domain.root(), Some("xn--85x722f.xn--fiqs8s"));
-  assert_eq!(domain.suffix(), "xn--fiqs8s");
+  let domain = DomainName::parse("www.食狮.中国")?;
+  assert_eq!(domain.root(), Some("食狮.中国"));
+  assert_eq!(domain.suffix(), "中国");
 
-  let domain = domain::Name::parse("www.xn--85x722f.xn--55qx5d.cn")?;
+  let domain = DomainName::parse("www.xn--85x722f.xn--55qx5d.cn")?;
   assert_eq!(domain.root(), Some("xn--85x722f.xn--55qx5d.cn"));
   assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
-  let domain = domain::Name::parse("a.b.example.uk.com")?;
+  let domain = DomainName::parse("a.b.example.uk.com")?;
   assert_eq!(domain.root(), Some("example.uk.com"));
   assert_eq!(domain.suffix(), "uk.com");
 
-  let name = dns::Name::parse("_tcp.example.com.")?;
+  let name = DnsName::parse("_tcp.example.com.")?;
   assert_eq!(name.suffix(), Some("com."));
 
   // In any case if the domain's suffix is in the list
@@ -43,21 +41,28 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
-pub mod dns;
-pub mod domain;
-pub mod email;
+mod dns;
+mod domain;
+#[cfg(feature = "email")]
+mod email;
+
 mod matcher;
 #[cfg(feature = "serde")]
 mod serde;
 
 use core::fmt;
 
+pub use dns::Name as DnsName;
+pub use domain::Name as DomainName;
+#[cfg(feature = "email")]
+pub use email::Address as EmailAddress;
+pub use email::Host;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    DomainNotAscii,
     NameTooLong,
     EmptyLabel,
     EmailLocalTooLong,
@@ -65,6 +70,7 @@ pub enum Error {
     EmptyName,
     IllegalCharacter,
     InvalidDomain,
+    InvalidIpAddr,
     LabelEndNotAlnum,
     LabelStartNotAlnum,
     LabelTooLong,
@@ -79,7 +85,6 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let error = match self {
-            Error::DomainNotAscii => "domain not ascii",
             Error::NameTooLong => "name too long",
             Error::EmptyLabel => "domain/email contains empty label",
             Error::EmailLocalTooLong => "email local too long",
@@ -87,6 +92,7 @@ impl fmt::Display for Error {
             Error::EmptyName => "name is empty",
             Error::IllegalCharacter => "domain contains illegal characters",
             Error::InvalidDomain => "invalid domain name",
+            Error::InvalidIpAddr => "email has an invalid ip address",
             Error::LabelEndNotAlnum => "label does not start with an alphanumeric character",
             Error::LabelStartNotAlnum => "label does not end with a alphanumeric character",
             Error::LabelTooLong => "label too long",
