@@ -37,23 +37,27 @@ pub(crate) fn is_label(label: &str, label_is_tld: bool) -> Result<()> {
         return Err(Error::LabelTooLong);
     }
 
-    if label_is_tld && label.parse::<f64>().is_ok() {
+    if label_is_tld && is_num(label) {
         return Err(Error::NumericTld);
     }
 
-    if !label.starts_with(char::is_alphanumeric) {
+    if label.starts_with(|c: char| c.is_ascii() && !c.is_alphanumeric()) {
         return Err(Error::LabelStartNotAlnum);
     }
 
-    if !label.ends_with(char::is_alphanumeric) {
+    if label.ends_with(|c: char| c.is_ascii() && !c.is_alphanumeric()) {
         return Err(Error::LabelEndNotAlnum);
     }
 
-    if label.contains(|c: char| c != '-' && !c.is_alphanumeric()) {
+    if label.contains(|c: char| c != '-' && c.is_ascii() && !c.is_alphanumeric()) {
         return Err(Error::IllegalCharacter);
     }
 
     Ok(())
+}
+
+pub(crate) fn is_num(label: &str) -> bool {
+    label.parse::<f64>().is_ok()
 }
 
 // https://tools.ietf.org/html/rfc2181#section-11

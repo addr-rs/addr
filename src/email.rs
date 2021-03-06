@@ -1,7 +1,7 @@
 use crate::domain::Name;
+use crate::net::IpAddr;
 use crate::{matcher, Error, Result};
 use core::fmt;
-use no_std_net::IpAddr;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Address<'a> {
@@ -27,14 +27,13 @@ impl<'a> Address<'a> {
         let rest = address.get(at_sign + 1..).ok_or(Error::NoHostPart)?;
         let host = match rest.strip_prefix('[') {
             Some(h) => {
-                let ipv6 = h.strip_suffix(']').ok_or(Error::IllegalCharacter)?;
-                let ip_addr = ipv6.parse().map_err(|_| Error::InvalidIpAddr)?;
-                Host::IpAddr(IpAddr::V6(ip_addr))
+                let ip_addr = h
+                    .strip_suffix(']')
+                    .ok_or(Error::IllegalCharacter)?
+                    .parse()?;
+                Host::IpAddr(ip_addr)
             }
-            None => match rest.parse::<IpAddr>() {
-                Ok(ip_addr) => Host::IpAddr(ip_addr),
-                Err(_) => Host::Domain(Name::parse(rest)?),
-            },
+            None => Host::Domain(Name::parse(rest)?),
         };
         Ok(Self {
             host,

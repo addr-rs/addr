@@ -7,28 +7,28 @@ This library uses Mozilla's [Public Suffix List](https://publicsuffix.org) to re
 ## Examples
 
 ```rust
-use addr::{DnsName, DomainName};
+use addr::{dns, domain};
 
 fn main() -> addr::Result<()> {
     // You can find out the root domain
     // or extension of any given domain name
-    let domain = DomainName::parse("www.example.com")?;
+    let domain = domain::Name::parse("www.example.com")?;
     assert_eq!(domain.root(), Some("example.com"));
     assert_eq!(domain.suffix(), "com");
 
-    let domain = DomainName::parse("www.食狮.中国")?;
+    let domain = domain::Name::parse("www.食狮.中国")?;
     assert_eq!(domain.root(), Some("食狮.中国"));
     assert_eq!(domain.suffix(), "中国");
 
-    let domain = DomainName::parse("www.xn--85x722f.xn--55qx5d.cn")?;
+    let domain = domain::Name::parse("www.xn--85x722f.xn--55qx5d.cn")?;
     assert_eq!(domain.root(), Some("xn--85x722f.xn--55qx5d.cn"));
     assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
-    let domain = DomainName::parse("a.b.example.uk.com")?;
+    let domain = domain::Name::parse("a.b.example.uk.com")?;
     assert_eq!(domain.root(), Some("example.uk.com"));
     assert_eq!(domain.suffix(), "uk.com");
 
-    let name = DnsName::parse("_tcp.example.com.")?;
+    let name = dns::Name::parse("_tcp.example.com.")?;
     assert_eq!(name.root(), Some("example.com."));
     assert_eq!(name.suffix(), Some("com."));
 

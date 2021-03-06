@@ -7,27 +7,27 @@
 
   ```rust
   # fn main() -> addr::Result<()> {
-  use addr::{DnsName, DomainName, Error};
+  use addr::{dns, domain};
 
   // You can find out the root domain
   // or extension of any given domain name
-  let domain = DomainName::parse("www.example.com")?;
+  let domain = domain::Name::parse("www.example.com")?;
   assert_eq!(domain.root(), Some("example.com"));
   assert_eq!(domain.suffix(), "com");
 
-  let domain = DomainName::parse("www.食狮.中国")?;
+  let domain = domain::Name::parse("www.食狮.中国")?;
   assert_eq!(domain.root(), Some("食狮.中国"));
   assert_eq!(domain.suffix(), "中国");
 
-  let domain = DomainName::parse("www.xn--85x722f.xn--55qx5d.cn")?;
+  let domain = domain::Name::parse("www.xn--85x722f.xn--55qx5d.cn")?;
   assert_eq!(domain.root(), Some("xn--85x722f.xn--55qx5d.cn"));
   assert_eq!(domain.suffix(), "xn--55qx5d.cn");
 
-  let domain = DomainName::parse("a.b.example.uk.com")?;
+  let domain = domain::Name::parse("a.b.example.uk.com")?;
   assert_eq!(domain.root(), Some("example.uk.com"));
   assert_eq!(domain.suffix(), "uk.com");
 
-  let name = DnsName::parse("_tcp.example.com.")?;
+  let name = dns::Name::parse("_tcp.example.com.")?;
   assert_eq!(name.suffix(), Some("com."));
 
   // In any case if the domain's suffix is in the list
@@ -41,22 +41,17 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
-mod dns;
-mod domain;
+pub mod dns;
+pub mod domain;
 #[cfg(feature = "email")]
-mod email;
-
+pub mod email;
 mod matcher;
+#[cfg(feature = "email")]
+pub mod net;
 #[cfg(feature = "serde")]
 mod serde;
 
 use core::fmt;
-
-pub use dns::Name as DnsName;
-pub use domain::Name as DomainName;
-#[cfg(feature = "email")]
-pub use email::Address as EmailAddress;
-pub use email::Host;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
