@@ -38,7 +38,7 @@
   ```
 !*/
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![forbid(unsafe_code)]
 
 pub mod dns;
@@ -101,3 +101,6 @@ impl fmt::Display for Error {
         write!(f, "{}", error)
     }
 }
+
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}

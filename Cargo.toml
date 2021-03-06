@@ -6,14 +6,15 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr"
 documentation = "https://docs.rs/addr"
 readme = "README.md"
-keywords = ["tld", "gtld", "cctld", "domain", "psl"]
+keywords = ["tld", "gtld", "cctld", "domain", "no_std"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 edition = "2018"
 
 [features]
-default = ["net"]
+default = ["net", "std"]
 net = ["no-std-net"]
 serde-net = ["serde", "no-std-net/serde"]
+std = []
 
 [dependencies]
 psl = "1.0.5"
