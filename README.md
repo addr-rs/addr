@@ -1,6 +1,6 @@
 # Robust and fast domain name parsing
 
-[![Build Status](https://travis-ci.org/addr-rs/addr.svg?branch=main)](https://travis-ci.org/addr-rs/addr) [![Latest Version](https://img.shields.io/crates/v/addr.svg)](https://crates.io/crates/addr) [![Docs](https://docs.rs/addr/badge.svg)](https://docs.rs/addr)
+[![CI](https://github.com/addr-rs/addr/actions/workflows/ci.yml/badge.svg)](https://github.com/addr-rs/addr/actions/workflows/ci.yml) [![Latest Version](https://img.shields.io/crates/v/addr.svg)](https://crates.io/crates/addr) [![Docs](https://docs.rs/addr/badge.svg)](https://docs.rs/addr)
 
 This library uses Mozilla's [Public Suffix List](https://publicsuffix.org) to reliably parse domain names in [Rust](https://www.rust-lang.org). It will reliably check if a domain has valid syntax. It also checks the length restrictions for each label, total number of labels and full length of domain name.
 
