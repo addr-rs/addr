@@ -17,7 +17,7 @@ serde-net = ["serde", "no-std-net/serde"]
 std = []
 
 [dependencies]
-psl = "1.0.5"
+psl = "2.0.1"
 no-std-net = { version = "0.5.0", default-features = false, optional = true }
 serde = { version = "1.0.124", default-features = false, optional = true }
 

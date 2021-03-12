@@ -1,6 +1,6 @@
 use crate::{matcher, Result};
 use core::{fmt, str};
-use psl::Suffix;
+use psl::{List, Psl, Suffix};
 
 /// Holds information about a particular DNS name
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -14,7 +14,7 @@ impl<'a> Name<'a> {
         matcher::is_dns_name(name)?;
         Ok(Self {
             full: name,
-            suffix: psl::suffix(name.as_bytes()),
+            suffix: List.suffix(name.as_bytes()),
         })
     }
 

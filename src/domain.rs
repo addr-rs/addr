@@ -1,5 +1,6 @@
 use crate::{matcher, Error, Result};
 use core::fmt;
+use psl::{List, Psl};
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Name<'a> {
@@ -16,7 +17,7 @@ impl<'a> Name<'a> {
             matcher::is_label(stripped, true)?;
         }
         Ok(Self {
-            suffix: psl::suffix(name.as_bytes()).ok_or(Error::InvalidDomain)?,
+            suffix: List.suffix(name.as_bytes()).ok_or(Error::InvalidDomain)?,
             full: name,
         })
     }
