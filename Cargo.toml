@@ -14,7 +14,7 @@ edition = "2018"
 default = ["net", "std"]
 net = ["no-std-net"]
 serde-net = ["serde", "no-std-net/serde"]
-ser-de = ["serde", "psl"]
+serde-psl = ["serde", "psl"]
 std = []
 
 [dependencies.psl-types]
@@ -36,7 +36,9 @@ optional = true
 
 [dev-dependencies]
 criterion = "0.3.4"
+lazy_static = "1"
 psl = "2"
+publicsuffix = "2"
 rspec = "1.0.0"
 
 [[bench]]

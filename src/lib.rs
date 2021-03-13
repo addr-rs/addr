@@ -50,7 +50,7 @@ mod matcher;
 #[cfg(any(feature = "net", feature = "serde-net"))]
 pub mod net;
 pub mod parser;
-#[cfg(any(feature = "ser-de", feature = "serde-net"))]
+#[cfg(any(feature = "serde-psl", feature = "serde-net"))]
 mod serde;
 
 use core::fmt;
