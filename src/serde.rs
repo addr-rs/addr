@@ -1,8 +1,12 @@
+#[cfg(feature = "serde-net")]
+use crate::parser::EmailAddress;
+use crate::parser::{DnsName, DomainName};
 use crate::{dns, domain};
 #[cfg(feature = "serde-net")]
 use crate::{email, net};
 #[cfg(feature = "serde-net")]
 use no_std_net as upstream;
+use psl::List;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -21,7 +25,7 @@ impl<'de> Deserialize<'de> for domain::Name<'de> {
         D: Deserializer<'de>,
     {
         let input = <&str>::deserialize(deserializer)?;
-        Self::parse(input).map_err(|_| {
+        List.parse_domain_name(input).map_err(|_| {
             let invalid = Unexpected::Str(input);
             Error::invalid_value(invalid, &"a domain name")
         })
@@ -43,7 +47,7 @@ impl<'de> Deserialize<'de> for dns::Name<'de> {
         D: Deserializer<'de>,
     {
         let input = <&str>::deserialize(deserializer)?;
-        Self::parse(input).map_err(|_| {
+        List.parse_dns_name(input).map_err(|_| {
             let invalid = Unexpected::Str(input);
             Error::invalid_value(invalid, &"a DNS name")
         })
@@ -67,7 +71,7 @@ impl<'de> Deserialize<'de> for email::Address<'de> {
         D: Deserializer<'de>,
     {
         let input = <&str>::deserialize(deserializer)?;
-        Self::parse(input).map_err(|_| {
+        List.parse_email_address(input).map_err(|_| {
             let invalid = Unexpected::Str(input);
             Error::invalid_value(invalid, &"a DNS name")
         })
@@ -95,7 +99,7 @@ impl<'de> Deserialize<'de> for email::Host<'de> {
         D: Deserializer<'de>,
     {
         let input = <&str>::deserialize(deserializer)?;
-        Self::parse(input).map_err(|_| {
+        email::Host::parse(&List, input).map_err(|_| {
             let invalid = Unexpected::Str(input);
             Error::invalid_value(invalid, &"an email host")
         })

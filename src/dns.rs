@@ -1,6 +1,6 @@
 use crate::{matcher, Result};
 use core::{fmt, str};
-use psl::{List, Psl, Suffix};
+use psl_types::{List, Suffix, Type};
 
 /// Holds information about a particular DNS name
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -10,11 +10,11 @@ pub struct Name<'a> {
 }
 
 impl<'a> Name<'a> {
-    pub fn parse(name: &'a str) -> Result<Name<'a>> {
+    pub(crate) fn parse<T: List<'a> + ?Sized>(list: &T, name: &'a str) -> Result<Name<'a>> {
         matcher::is_dns_name(name)?;
         Ok(Self {
             full: name,
-            suffix: List.suffix(name.as_bytes()),
+            suffix: list.suffix(name.as_bytes()),
         })
     }
 
@@ -49,7 +49,7 @@ impl<'a> Name<'a> {
 
     pub const fn is_icann(&self) -> bool {
         if let Some(suffix) = self.suffix {
-            matches!(suffix.typ(), Some(psl::Type::Icann))
+            matches!(suffix.typ(), Some(Type::Icann))
         } else {
             false
         }
@@ -57,7 +57,7 @@ impl<'a> Name<'a> {
 
     pub const fn is_private(&self) -> bool {
         if let Some(suffix) = self.suffix {
-            matches!(suffix.typ(), Some(psl::Type::Icann))
+            matches!(suffix.typ(), Some(Type::Private))
         } else {
             false
         }

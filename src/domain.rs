@@ -1,15 +1,15 @@
 use crate::{matcher, Error, Result};
 use core::fmt;
-use psl::{List, Psl};
+use psl_types::{List, Type};
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Name<'a> {
     full: &'a str,
-    suffix: psl::Suffix<'a>,
+    suffix: psl_types::Suffix<'a>,
 }
 
 impl<'a> Name<'a> {
-    pub fn parse(name: &'a str) -> Result<Name<'a>> {
+    pub(crate) fn parse<T: List<'a> + ?Sized>(list: &T, name: &'a str) -> Result<Name<'a>> {
         let stripped = name.strip_suffix('.').unwrap_or(name);
         if stripped.contains('.') {
             matcher::is_domain_name(stripped)?;
@@ -17,7 +17,7 @@ impl<'a> Name<'a> {
             matcher::is_label(stripped, true)?;
         }
         Ok(Self {
-            suffix: List.suffix(name.as_bytes()).ok_or(Error::InvalidDomain)?,
+            suffix: list.suffix(name.as_bytes()).ok_or(Error::InvalidDomain)?,
             full: name,
         })
     }
@@ -48,11 +48,11 @@ impl<'a> Name<'a> {
     }
 
     pub const fn is_icann(&self) -> bool {
-        matches!(self.suffix.typ(), Some(psl::Type::Icann))
+        matches!(self.suffix.typ(), Some(Type::Icann))
     }
 
     pub const fn is_private(&self) -> bool {
-        matches!(self.suffix.typ(), Some(psl::Type::Private))
+        matches!(self.suffix.typ(), Some(Type::Private))
     }
 }
 
