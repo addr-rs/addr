@@ -13,7 +13,7 @@ edition = "2018"
 [features]
 default = ["net", "std"]
 net = ["no-std-net"]
-serde-net = ["serde", "no-std-net/serde"]
+serde-net = ["serde-psl", "no-std-net/serde"]
 serde-psl = ["serde", "psl"]
 std = []
 

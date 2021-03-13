@@ -6,6 +6,7 @@ use crate::{dns, domain};
 use crate::{email, net};
 #[cfg(feature = "serde-net")]
 use no_std_net as upstream;
+#[cfg(feature = "serde-psl")]
 use psl::List;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -19,6 +20,7 @@ impl Serialize for domain::Name<'_> {
     }
 }
 
+#[cfg(feature = "serde-psl")]
 impl<'de> Deserialize<'de> for domain::Name<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -41,6 +43,7 @@ impl Serialize for dns::Name<'_> {
     }
 }
 
+#[cfg(feature = "serde-psl")]
 impl<'de> Deserialize<'de> for dns::Name<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
