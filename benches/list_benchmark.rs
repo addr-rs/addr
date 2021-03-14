@@ -1,4 +1,4 @@
-use addr::parser::{DnsName, EmailAddress, DomainName};
+use addr::parser::{DnsName, DomainName, EmailAddress};
 use criterion::{criterion_group, criterion_main, Criterion};
 use psl_types::List as Psl;
 use publicsuffix::List;

@@ -1,6 +1,8 @@
-use crate::{dns, domain, Result};
+//! Parser traits
+
 #[cfg(any(feature = "net", feature = "serde-net"))]
 use crate::email;
+use crate::{dns, domain, Result};
 use psl_types::List;
 
 /// Parses a domain using the list

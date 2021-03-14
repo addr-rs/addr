@@ -55,8 +55,10 @@ mod serde;
 
 use core::fmt;
 
+/// Custom result type
 pub type Result<T> = core::result::Result<T, Error>;
 
+/// The errors returned by this crate
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[non_exhaustive]
 pub enum Error {

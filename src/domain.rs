@@ -1,7 +1,10 @@
+//! Domain name types
+
 use crate::{matcher, Error, Result};
 use core::fmt;
 use psl_types::{List, Type};
 
+/// Holds information about a particular domain name
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Name<'a> {
     full: &'a str,
@@ -22,10 +25,12 @@ impl<'a> Name<'a> {
         })
     }
 
+    /// Full domain name as a `str`
     pub const fn as_str(&self) -> &str {
         &self.full
     }
 
+    /// The root domain (the registrable part)
     pub fn root(&self) -> Option<&str> {
         let suffix = self.suffix();
         let offset = self
@@ -38,19 +43,29 @@ impl<'a> Name<'a> {
         self.full.get(offset..)
     }
 
+    /// The domain name suffix (extension)
     pub fn suffix(&self) -> &str {
         let offset = self.full.len() - self.suffix.as_bytes().len();
         &self.full[offset..]
     }
 
+    /// Whether the suffix of the domain name is in the Public Suffix List
     pub const fn has_known_suffix(&self) -> bool {
         self.suffix.is_known()
     }
 
+    /// Whether this an ICANN delegated suffix
+    ///
+    /// ICANN domains are those delegated by ICANN or part of the IANA root
+    /// zone database
     pub const fn is_icann(&self) -> bool {
         matches!(self.suffix.typ(), Some(Type::Icann))
     }
 
+    /// Whether this is a private party delegated suffix
+    ///
+    /// PRIVATE domains are amendments submitted by the domain holder, as an
+    /// expression of how they operate their domain security policy
     pub const fn is_private(&self) -> bool {
         matches!(self.suffix.typ(), Some(Type::Private))
     }

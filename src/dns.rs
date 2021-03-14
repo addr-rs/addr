@@ -1,3 +1,5 @@
+//! DNS types
+
 use crate::{matcher, Result};
 use core::{fmt, str};
 use psl_types::{List, Suffix, Type};
@@ -18,10 +20,12 @@ impl<'a> Name<'a> {
         })
     }
 
+    /// Full dns name as a `str`
     pub const fn as_str(&self) -> &str {
         &self.full
     }
 
+    /// The root domain (the registrable part)
     pub fn root(&self) -> Option<&str> {
         let suffix = self.suffix()?;
         let offset = self
@@ -34,11 +38,13 @@ impl<'a> Name<'a> {
         self.full.get(offset..)
     }
 
+    /// The domain name suffix (extension)
     pub fn suffix(&self) -> Option<&str> {
         let bytes = self.suffix.as_ref()?.as_bytes();
         str::from_utf8(bytes).ok()
     }
 
+    /// Whether the suffix of the domain name is in the Public Suffix List
     pub const fn has_known_suffix(&self) -> bool {
         if let Some(suffix) = self.suffix {
             suffix.is_known()
@@ -47,6 +53,10 @@ impl<'a> Name<'a> {
         }
     }
 
+    /// Whether this an ICANN delegated suffix
+    ///
+    /// ICANN domains are those delegated by ICANN or part of the IANA root
+    /// zone database
     pub const fn is_icann(&self) -> bool {
         if let Some(suffix) = self.suffix {
             matches!(suffix.typ(), Some(Type::Icann))
@@ -55,6 +65,10 @@ impl<'a> Name<'a> {
         }
     }
 
+    /// Whether this is a private party delegated suffix
+    ///
+    /// PRIVATE domains are amendments submitted by the domain holder, as an
+    /// expression of how they operate their domain security policy
     pub const fn is_private(&self) -> bool {
         if let Some(suffix) = self.suffix {
             matches!(suffix.typ(), Some(Type::Private))

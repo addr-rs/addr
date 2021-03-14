@@ -1,25 +1,35 @@
+//! Network types
+//!
+//! This module only exists because `std::net` is not available in
+//! `no_std` environments
+
 use crate::{Error, Result};
 use core::str::FromStr;
 use no_std_net as upstream;
 
+/// An IPv4 address
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Ipv4Addr(pub(crate) upstream::Ipv4Addr);
 
 impl Ipv4Addr {
+    /// Returns the four eight-bit integers that make up this address.
     pub const fn octets(&self) -> [u8; 4] {
         self.0.octets()
     }
 }
 
+/// An IPv6 address
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Ipv6Addr(pub(crate) upstream::Ipv6Addr);
 
 impl Ipv6Addr {
+    /// Returns the sixteen eight-bit integers the IPv6 address consists of.
     pub const fn octets(&self) -> [u8; 16] {
         self.0.octets()
     }
 }
 
+/// An IP address
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum IpAddr {
     V4(Ipv4Addr),

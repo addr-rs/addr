@@ -1,9 +1,12 @@
+//! Email address types
+
 use crate::domain::Name;
 use crate::net::IpAddr;
 use crate::{matcher, Error, Result};
 use core::fmt;
 use psl_types::List;
 
+/// Holds information about a particular email address
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Address<'a> {
     full: &'a str,
@@ -28,14 +31,17 @@ impl<'a> Address<'a> {
         })
     }
 
+    /// The full email address as a `str`
     pub const fn as_str(&self) -> &str {
         &self.full
     }
 
+    /// The host part of the email address
     pub const fn host(&self) -> Host<'a> {
         self.host
     }
 
+    /// The user (local) part of the email address
     pub fn user(&self) -> &str {
         &self.full[..self.at_sign]
     }
@@ -47,6 +53,7 @@ impl fmt::Display for Address<'_> {
     }
 }
 
+/// Information about the host part of an email address
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Host<'a> {
     Domain(Name<'a>),
