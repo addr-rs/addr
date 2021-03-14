@@ -1,6 +1,7 @@
 //! DNS types
 
-use crate::{matcher, Result};
+use crate::error::Result;
+use crate::matcher;
 use core::{fmt, str};
 use psl_types::{List, Suffix, Type};
 

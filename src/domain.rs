@@ -1,6 +1,7 @@
 //! Domain name types
 
-use crate::{matcher, Error, Result};
+use crate::error::{Kind, Result};
+use crate::matcher;
 use core::fmt;
 use psl_types::{List, Type};
 
@@ -20,7 +21,7 @@ impl<'a> Name<'a> {
             matcher::is_label(stripped, true)?;
         }
         Ok(Self {
-            suffix: list.suffix(name.as_bytes()).ok_or(Error::InvalidDomain)?,
+            suffix: list.suffix(name.as_bytes()).ok_or(Kind::InvalidDomain)?,
             full: name,
         })
     }

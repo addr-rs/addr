@@ -1,7 +1,7 @@
 [package]
 name = "addr"
 description = "A library for parsing domain names"
-version = "0.10.3-alpha.0"
+version = "0.11.0-alpha.0"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/addr-rs/addr"
 documentation = "https://docs.rs/addr"
@@ -17,11 +17,11 @@ serde-net = ["serde-psl", "no-std-net/serde"]
 serde-psl = ["serde", "psl"]
 std = []
 
-[dependencies.psl-types]
-version = "2.0.0"
+[dependencies]
+psl-types = "2.0.0"
 
 [dependencies.psl]
-version = "2.0.0"
+version = "2.0.3"
 optional = true
 
 [dependencies.no-std-net]
@@ -36,9 +36,9 @@ optional = true
 
 [dev-dependencies]
 criterion = "0.3.4"
-lazy_static = "1"
-psl = "2"
-publicsuffix = "2"
+lazy_static = "1.4.0"
+psl = "2.0.3"
+publicsuffix = "2.0.2"
 rspec = "1.0.0"
 
 [[bench]]

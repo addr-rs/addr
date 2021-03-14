@@ -3,7 +3,7 @@
 //! This module only exists because `std::net` is not available in
 //! `no_std` environments
 
-use crate::{Error, Result};
+use crate::error::Kind;
 use core::str::FromStr;
 use no_std_net as upstream;
 
@@ -37,15 +37,15 @@ pub enum IpAddr {
 }
 
 impl FromStr for IpAddr {
-    type Err = Error;
+    type Err = Kind;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.parse::<upstream::IpAddr>() {
             Ok(ip_addr) => match ip_addr {
                 upstream::IpAddr::V4(ip_addr) => Ok(IpAddr::V4(Ipv4Addr(ip_addr))),
                 upstream::IpAddr::V6(ip_addr) => Ok(IpAddr::V6(Ipv6Addr(ip_addr))),
             },
-            Err(_) => Err(Error::InvalidIpAddr),
+            Err(_) => Err(Kind::InvalidIpAddr),
         }
     }
 }

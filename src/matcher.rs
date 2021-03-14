@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::error::{Kind, Result};
 
 const MAX_DOMAIN_LEN: usize = 253;
 const MAX_LABELS_COUNT: usize = 127;
@@ -12,13 +12,13 @@ const MAX_LABEL_LEN: usize = 63;
 pub(crate) fn is_domain_name(domain: &str) -> Result<()> {
     // check total lengths
     if domain.chars().count() > MAX_DOMAIN_LEN {
-        return Err(Error::NameTooLong);
+        return Err(Kind::NameTooLong);
     }
 
     let dot_count = domain.matches('.').count();
 
     if dot_count + 1 > MAX_LABELS_COUNT {
-        return Err(Error::TooManyLabels);
+        return Err(Kind::TooManyLabels);
     }
 
     for (i, label) in domain.split('.').enumerate() {
@@ -30,27 +30,27 @@ pub(crate) fn is_domain_name(domain: &str) -> Result<()> {
 
 pub(crate) fn is_label(label: &str, label_is_tld: bool) -> Result<()> {
     if label.is_empty() {
-        return Err(Error::EmptyLabel);
+        return Err(Kind::EmptyLabel);
     }
 
     if label.chars().count() > MAX_LABEL_LEN {
-        return Err(Error::LabelTooLong);
+        return Err(Kind::LabelTooLong);
     }
 
     if label_is_tld && is_num(label) {
-        return Err(Error::NumericTld);
+        return Err(Kind::NumericTld);
     }
 
     if label.starts_with(|c: char| c.is_ascii() && !c.is_alphanumeric()) {
-        return Err(Error::LabelStartNotAlnum);
+        return Err(Kind::LabelStartNotAlnum);
     }
 
     if label.ends_with(|c: char| c.is_ascii() && !c.is_alphanumeric()) {
-        return Err(Error::LabelEndNotAlnum);
+        return Err(Kind::LabelEndNotAlnum);
     }
 
     if label.contains(|c: char| c != '-' && c.is_ascii() && !c.is_alphanumeric()) {
-        return Err(Error::IllegalCharacter);
+        return Err(Kind::IllegalCharacter);
     }
 
     Ok(())
@@ -64,23 +64,23 @@ pub(crate) fn is_num(label: &str) -> bool {
 #[inline]
 pub(crate) fn is_dns_name(name: &str) -> Result<()> {
     if name.is_empty() {
-        return Err(Error::EmptyName);
+        return Err(Kind::EmptyName);
     }
 
     if name.contains("..") {
-        return Err(Error::EmptyLabel);
+        return Err(Kind::EmptyLabel);
     }
 
     let domain = name.strip_suffix('.').unwrap_or(name);
 
     // check total lengths
     if domain.len() > MAX_DOMAIN_LEN {
-        return Err(Error::NameTooLong);
+        return Err(Kind::NameTooLong);
     }
 
     for label in domain.split('.') {
         if label.len() > MAX_LABEL_LEN {
-            return Err(Error::LabelTooLong);
+            return Err(Kind::LabelTooLong);
         }
     }
 
@@ -91,36 +91,36 @@ pub(crate) fn is_dns_name(name: &str) -> Result<()> {
 pub(crate) fn is_email_local(local: &str) -> Result<()> {
     let mut chars = local.chars();
 
-    let first = chars.next().ok_or(Error::NoUserPart)?;
+    let first = chars.next().ok_or(Kind::NoUserPart)?;
 
     let last_index = chars.clone().count().max(1) - 1;
 
     if last_index > MAX_LABEL_LEN {
-        return Err(Error::EmailLocalTooLong);
+        return Err(Kind::EmailLocalTooLong);
     }
 
     if first == '"' {
         // quoted
         if last_index == 0 {
-            return Err(Error::QuoteUnclosed);
+            return Err(Kind::QuoteUnclosed);
         }
         for (index, c) in chars.enumerate() {
             if index == last_index {
                 if c != '"' {
-                    return Err(Error::QuoteUnclosed);
+                    return Err(Kind::QuoteUnclosed);
                 }
             } else if !is_combined(c) && !is_quoted(c) {
-                return Err(Error::IllegalCharacter);
+                return Err(Kind::IllegalCharacter);
             }
         }
     } else {
         // not quoted
         if first == ' ' || first == '.' || local.contains("..") {
-            return Err(Error::IllegalCharacter);
+            return Err(Kind::IllegalCharacter);
         }
         for (index, c) in chars.enumerate() {
             if !is_combined(c) && (index == last_index || c != '.') {
-                return Err(Error::IllegalCharacter);
+                return Err(Kind::IllegalCharacter);
             }
         }
     }

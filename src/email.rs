@@ -1,8 +1,9 @@
 //! Email address types
 
 use crate::domain::Name;
+use crate::error::{Kind, Result};
+use crate::matcher;
 use crate::net::IpAddr;
-use crate::{matcher, Error, Result};
 use core::fmt;
 use psl_types::List;
 
@@ -17,12 +18,12 @@ pub struct Address<'a> {
 impl<'a> Address<'a> {
     pub(crate) fn parse<T: List<'a> + ?Sized>(list: &T, address: &'a str) -> Result<Address<'a>> {
         if address.chars().count() > 254 {
-            return Err(Error::EmailTooLong);
+            return Err(Kind::EmailTooLong);
         }
-        let at_sign = address.rfind('@').ok_or(Error::NoAtSign)?;
-        let local = address.get(..at_sign).ok_or(Error::NoUserPart)?;
+        let at_sign = address.rfind('@').ok_or(Kind::NoAtSign)?;
+        let local = address.get(..at_sign).ok_or(Kind::NoUserPart)?;
         matcher::is_email_local(local)?;
-        let rest = address.get(at_sign + 1..).ok_or(Error::NoHostPart)?;
+        let rest = address.get(at_sign + 1..).ok_or(Kind::NoHostPart)?;
         let host = Host::parse(list, rest)?;
         Ok(Self {
             host,
@@ -64,10 +65,7 @@ impl<'a> Host<'a> {
     pub(crate) fn parse<T: List<'a> + ?Sized>(list: &T, host: &'a str) -> Result<Host<'a>> {
         match host.strip_prefix('[') {
             Some(h) => {
-                let ip_addr = h
-                    .strip_suffix(']')
-                    .ok_or(Error::IllegalCharacter)?
-                    .parse()?;
+                let ip_addr = h.strip_suffix(']').ok_or(Kind::IllegalCharacter)?.parse()?;
                 Ok(Host::IpAddr(ip_addr))
             }
             None => Ok(Host::Domain(Name::parse(list, host)?)),
