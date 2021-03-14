@@ -51,7 +51,7 @@ impl<'a> Name<'a> {
     }
 
     /// Whether the suffix of the domain name is in the Public Suffix List
-    pub const fn has_known_suffix(&self) -> bool {
+    pub fn has_known_suffix(&self) -> bool {
         self.suffix.is_known()
     }
 
