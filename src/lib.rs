@@ -8,7 +8,7 @@
   ```rust
   # fn main() -> Result<(), Box<dyn std::error::Error>> {
   use addr::parser::{DomainName, DnsName};
-  use psl::List;
+  use addr::psl::List;
 
   // You can find out the root domain
   // or extension of any given domain name
@@ -53,6 +53,12 @@ pub mod net;
 pub mod parser;
 #[cfg(any(feature = "serde-psl", feature = "serde-net"))]
 mod serde;
+
+/// The default implementation of the public suffix list this crate uses
+#[cfg(feature = "psl")]
+pub mod psl {
+    pub use psl::List;
+}
 
 /// Custom result type
 pub type Result<'a, T> = core::result::Result<T, error::Error<'a>>;

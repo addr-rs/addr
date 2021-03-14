@@ -8,7 +8,7 @@ This library uses Mozilla's [Public Suffix List](https://publicsuffix.org) to re
 
 ```rust
 use addr::parser::{DomainName, DnsName};
-use psl::List;
+use addr::psl::List;
 
 // You can find out the root domain
 // or extension of any given domain name

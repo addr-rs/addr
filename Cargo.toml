@@ -11,7 +11,7 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 edition = "2018"
 
 [features]
-default = ["net", "std"]
+default = ["net", "psl", "std"]
 net = ["no-std-net"]
 serde-net = ["serde-psl", "no-std-net/serde"]
 serde-psl = ["serde", "psl"]

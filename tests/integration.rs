@@ -1,5 +1,5 @@
 use addr::parser::*;
-use psl::List;
+use addr::psl::List;
 
 #[test]
 fn addr_parsing() {
