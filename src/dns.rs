@@ -28,15 +28,19 @@ impl<'a> Name<'a> {
 
     /// The root domain (the registrable part)
     pub fn root(&self) -> Option<&str> {
-        let suffix = self.suffix()?;
-        let len = self.full.len() - (suffix.len() + 1);
-        let offset = self
-            .full
-            .get(..len)?
-            .rfind('.')
-            .map(|x| x + 1)
-            .unwrap_or_default();
+        let offset = self.prefix()?.rfind('.').map(|x| x + 1).unwrap_or_default();
         self.full.get(offset..)
+    }
+
+    fn prefix(&self) -> Option<&str> {
+        let prefix = self
+            .full
+            .trim_end_matches(self.suffix()?)
+            .trim_end_matches('.');
+        if prefix.is_empty() {
+            return None;
+        }
+        Some(prefix)
     }
 
     /// The domain name suffix (extension)

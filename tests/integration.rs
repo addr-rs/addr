@@ -35,7 +35,13 @@ fn addr_parsing() {
                 "❤",
             ];
             for domain in domains {
-                assert!(List.parse_domain_name(domain).is_ok(), domain);
+                let name = List.parse_domain_name(domain).unwrap();
+                assert_eq!(name.root(), None);
+                assert_eq!(name.suffix(), domain);
+
+                let name = List.parse_dns_name(domain).unwrap();
+                assert_eq!(name.root(), None);
+                assert_eq!(name.suffix(), Some(domain));
             }
         });
 
