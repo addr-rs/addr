@@ -16,7 +16,7 @@ pub struct Address<'a> {
 }
 
 impl<'a> Address<'a> {
-    pub(crate) fn parse<T: List<'a> + ?Sized>(list: &T, address: &'a str) -> Result<Address<'a>> {
+    pub(crate) fn parse<T: List + ?Sized>(list: &T, address: &'a str) -> Result<Address<'a>> {
         if address.chars().count() > 254 {
             return Err(Kind::EmailTooLong);
         }
@@ -62,7 +62,7 @@ pub enum Host<'a> {
 }
 
 impl<'a> Host<'a> {
-    pub(crate) fn parse<T: List<'a> + ?Sized>(list: &T, host: &'a str) -> Result<Host<'a>> {
+    pub(crate) fn parse<T: List + ?Sized>(list: &T, host: &'a str) -> Result<Host<'a>> {
         match host.strip_prefix('[') {
             Some(h) => {
                 let ip_addr = h.strip_suffix(']').ok_or(Kind::IllegalCharacter)?.parse()?;

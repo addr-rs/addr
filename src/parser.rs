@@ -12,7 +12,7 @@ pub trait DomainName<'a> {
 
 impl<'a, T> DomainName<'a> for T
 where
-    T: List<'a>,
+    T: List,
 {
     fn parse_domain_name(&self, name: &'a str) -> Result<'a, domain::Name<'a>> {
         domain::Name::parse(self, name).map_err(|kind| kind.error_with(name))
@@ -26,7 +26,7 @@ pub trait DnsName<'a> {
 
 impl<'a, T> DnsName<'a> for T
 where
-    T: List<'a>,
+    T: List,
 {
     fn parse_dns_name(&self, name: &'a str) -> Result<'a, dns::Name<'a>> {
         dns::Name::parse(self, name).map_err(|kind| kind.error_with(name))
@@ -42,7 +42,7 @@ pub trait EmailAddress<'a> {
 #[cfg(any(feature = "net", feature = "serde-net"))]
 impl<'a, T> EmailAddress<'a> for T
 where
-    T: List<'a>,
+    T: List,
 {
     fn parse_email_address(&self, name: &'a str) -> Result<'a, email::Address<'a>> {
         email::Address::parse(self, name).map_err(|kind| kind.error_with(name))

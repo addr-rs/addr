@@ -13,7 +13,7 @@ pub struct Name<'a> {
 }
 
 impl<'a> Name<'a> {
-    pub(crate) fn parse<T: List<'a> + ?Sized>(list: &T, name: &'a str) -> Result<Name<'a>> {
+    pub(crate) fn parse<T: List + ?Sized>(list: &T, name: &'a str) -> Result<Name<'a>> {
         matcher::is_dns_name(name)?;
         Ok(Self {
             full: name,

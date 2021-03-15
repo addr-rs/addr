@@ -18,10 +18,10 @@ serde-psl = ["serde", "psl"]
 std = []
 
 [dependencies]
-psl-types = "2.0.1"
+psl-types = "2.0.2"
 
 [dependencies.psl]
-version = "2.0.4"
+version = "2.0.6"
 optional = true
 
 [dependencies.no-std-net]
@@ -37,8 +37,8 @@ optional = true
 [dev-dependencies]
 criterion = "0.3.4"
 lazy_static = "1.4.0"
-psl = "2.0.4"
-publicsuffix = "2.0.4"
+psl = "2.0.6"
+publicsuffix = "2.0.6"
 rspec = "1.0.0"
 
 [[bench]]
