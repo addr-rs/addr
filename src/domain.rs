@@ -14,7 +14,11 @@ pub struct Name<'a> {
 
 impl<'a> Name<'a> {
     pub(crate) fn parse<T: List<'a> + ?Sized>(list: &T, name: &'a str) -> Result<Name<'a>> {
-        let stripped = name.strip_suffix('.').unwrap_or(name);
+        let stripped = if name.ends_with('.') {
+            name.get(..name.len() - 1).unwrap_or_default()
+        } else {
+            name
+        };
         if stripped.contains('.') {
             matcher::is_domain_name(stripped)?;
         } else {
@@ -34,13 +38,13 @@ impl<'a> Name<'a> {
     /// The root domain (the registrable part)
     pub fn root(&self) -> Option<&str> {
         let suffix = self.suffix();
+        let len = self.full.len() - (suffix.len() + 1);
         let offset = self
             .full
-            .strip_suffix(suffix)?
-            .strip_suffix('.')?
+            .get(..len)?
             .rfind('.')
             .map(|x| x + 1)
-            .unwrap_or(0);
+            .unwrap_or_default();
         self.full.get(offset..)
     }
 
@@ -59,16 +63,16 @@ impl<'a> Name<'a> {
     ///
     /// ICANN domains are those delegated by ICANN or part of the IANA root
     /// zone database
-    pub const fn is_icann(&self) -> bool {
-        matches!(self.suffix.typ(), Some(Type::Icann))
+    pub fn is_icann(&self) -> bool {
+        self.suffix.typ() == Some(Type::Icann)
     }
 
     /// Whether this is a private party delegated suffix
     ///
     /// PRIVATE domains are amendments submitted by the domain holder, as an
     /// expression of how they operate their domain security policy
-    pub const fn is_private(&self) -> bool {
-        matches!(self.suffix.typ(), Some(Type::Private))
+    pub fn is_private(&self) -> bool {
+        self.suffix.typ() == Some(Type::Private)
     }
 }
 

@@ -71,7 +71,11 @@ pub(crate) fn is_dns_name(name: &str) -> Result<()> {
         return Err(Kind::EmptyLabel);
     }
 
-    let domain = name.strip_suffix('.').unwrap_or(name);
+    let domain = if name.ends_with('.') {
+        name.get(..name.len() - 1).unwrap_or_default()
+    } else {
+        name
+    };
 
     // check total lengths
     if domain.len() > MAX_DOMAIN_LEN {
