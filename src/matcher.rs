@@ -91,7 +91,7 @@ pub(crate) fn is_dns_name(name: &str) -> Result<()> {
     Ok(())
 }
 
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 pub(crate) fn is_email_local(local: &str) -> Result<()> {
     let mut chars = local.chars();
 
@@ -134,7 +134,7 @@ pub(crate) fn is_email_local(local: &str) -> Result<()> {
 
 // these characters can be anywhere in the expresion
 // [[:alnum:]!#$%&'*+/=?^_`{|}~-]
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 fn is_global(c: char) -> bool {
     c.is_ascii_alphanumeric()
         || c == '-'
@@ -158,12 +158,12 @@ fn is_global(c: char) -> bool {
         || c == '~'
 }
 
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 fn is_non_ascii(c: char) -> bool {
     c as u32 > 0x7f // non-ascii characters (can also be unquoted)
 }
 
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 fn is_quoted(c: char) -> bool {
     // ["(),\\:;<>@\[\]. ]
     c == '"'
@@ -182,7 +182,7 @@ fn is_quoted(c: char) -> bool {
         || c == ']'
 }
 
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 fn is_combined(c: char) -> bool {
     is_global(c) || is_non_ascii(c)
 }

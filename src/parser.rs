@@ -1,6 +1,6 @@
 //! Parser traits
 
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 use crate::email;
 use crate::{dns, domain, Result};
 use psl_types::List;
@@ -34,12 +34,12 @@ where
 }
 
 /// Parses an email address using the list
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 pub trait EmailAddress<'a> {
     fn parse_email_address(&self, name: &'a str) -> Result<'a, email::Address<'a>>;
 }
 
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 impl<'a, T> EmailAddress<'a> for T
 where
     T: List,

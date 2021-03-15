@@ -10,13 +10,6 @@ keywords = ["tld", "gtld", "cctld", "domain", "no_std"]
 authors = ["rushmorem <rushmore@webenchanter.com>"]
 edition = "2018"
 
-[features]
-default = ["net", "psl", "std"]
-net = ["no-std-net"]
-serde-net = ["serde-psl", "no-std-net/serde"]
-serde-psl = ["serde", "psl"]
-std = []
-
 [dependencies]
 psl-types = "2.0.2"
 
@@ -27,6 +20,7 @@ optional = true
 [dependencies.no-std-net]
 version = "0.5.0"
 default-features = false
+features = ["serde"]
 optional = true
 
 [dependencies.serde]
@@ -44,3 +38,11 @@ rspec = "1.0.0"
 [[bench]]
 name = "list_benchmark"
 harness = false
+
+[features]
+default = ["net", "psl", "std"]
+net = ["no-std-net"]
+std = []
+
+[package.metadata.docs.rs]
+features = ["default", "serde"]

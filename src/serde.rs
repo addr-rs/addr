@@ -1,12 +1,12 @@
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 use crate::parser::EmailAddress;
 use crate::parser::{DnsName, DomainName};
 use crate::{dns, domain};
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 use crate::{email, net};
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 use no_std_net as upstream;
-#[cfg(feature = "serde-psl")]
+#[cfg(feature = "psl")]
 use psl::List;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -20,7 +20,7 @@ impl Serialize for domain::Name<'_> {
     }
 }
 
-#[cfg(feature = "serde-psl")]
+#[cfg(feature = "psl")]
 impl<'de> Deserialize<'de> for domain::Name<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -43,7 +43,7 @@ impl Serialize for dns::Name<'_> {
     }
 }
 
-#[cfg(feature = "serde-psl")]
+#[cfg(feature = "psl")]
 impl<'de> Deserialize<'de> for dns::Name<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -57,7 +57,7 @@ impl<'de> Deserialize<'de> for dns::Name<'de> {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl Serialize for email::Address<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -67,7 +67,7 @@ impl Serialize for email::Address<'_> {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl<'de> Deserialize<'de> for email::Address<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -81,7 +81,7 @@ impl<'de> Deserialize<'de> for email::Address<'de> {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl Serialize for email::Host<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -95,7 +95,7 @@ impl Serialize for email::Host<'_> {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl<'de> Deserialize<'de> for email::Host<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -109,7 +109,7 @@ impl<'de> Deserialize<'de> for email::Host<'de> {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl Serialize for net::Ipv4Addr {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -119,7 +119,7 @@ impl Serialize for net::Ipv4Addr {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl<'de> Deserialize<'de> for net::Ipv4Addr {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -130,7 +130,7 @@ impl<'de> Deserialize<'de> for net::Ipv4Addr {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl Serialize for net::Ipv6Addr {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -140,7 +140,7 @@ impl Serialize for net::Ipv6Addr {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl<'de> Deserialize<'de> for net::Ipv6Addr {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -151,7 +151,7 @@ impl<'de> Deserialize<'de> for net::Ipv6Addr {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl Serialize for net::IpAddr {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -165,7 +165,7 @@ impl Serialize for net::IpAddr {
     }
 }
 
-#[cfg(feature = "serde-net")]
+#[cfg(feature = "net")]
 impl<'de> Deserialize<'de> for net::IpAddr {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

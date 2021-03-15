@@ -44,14 +44,14 @@
 
 pub mod dns;
 pub mod domain;
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 pub mod email;
 pub mod error;
 mod matcher;
-#[cfg(any(feature = "net", feature = "serde-net"))]
+#[cfg(feature = "net")]
 pub mod net;
 pub mod parser;
-#[cfg(any(feature = "serde-psl", feature = "serde-net"))]
+#[cfg(feature = "serde")]
 mod serde;
 
 /// The default implementation of the public suffix list this crate uses
