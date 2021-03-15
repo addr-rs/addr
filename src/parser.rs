@@ -2,7 +2,6 @@
 
 #[cfg(any(feature = "net", feature = "serde-net"))]
 use crate::email;
-use crate::error::Error;
 use crate::{dns, domain, Result};
 use psl_types::List;
 
@@ -16,7 +15,7 @@ where
     T: List<'a>,
 {
     fn parse_domain_name(&self, name: &'a str) -> Result<'a, domain::Name<'a>> {
-        domain::Name::parse(self, name).map_err(|kind| Error::new(kind, name))
+        domain::Name::parse(self, name).map_err(|kind| kind.error_with(name))
     }
 }
 
@@ -30,7 +29,7 @@ where
     T: List<'a>,
 {
     fn parse_dns_name(&self, name: &'a str) -> Result<'a, dns::Name<'a>> {
-        dns::Name::parse(self, name).map_err(|kind| Error::new(kind, name))
+        dns::Name::parse(self, name).map_err(|kind| kind.error_with(name))
     }
 }
 
@@ -46,6 +45,6 @@ where
     T: List<'a>,
 {
     fn parse_email_address(&self, name: &'a str) -> Result<'a, email::Address<'a>> {
-        email::Address::parse(self, name).map_err(|kind| Error::new(kind, name))
+        email::Address::parse(self, name).map_err(|kind| kind.error_with(name))
     }
 }
