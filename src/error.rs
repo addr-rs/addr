@@ -27,6 +27,7 @@ impl<'a> fmt::Display for Error<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.kind {
             Kind::NameTooLong => write!(f, "'{}' is too long", self.input),
+            Kind::NetDisabled => write!(f, "'{}'; can't parse email addresses containing IP addresses when `net` feature is disabled", self.input),
             Kind::EmptyLabel => write!(f, "'{}' contains an empty label", self.input),
             Kind::EmailLocalTooLong => {
                 write!(f, "the user local part in '{}' is too long", self.input)
@@ -69,6 +70,7 @@ impl<'a> std::error::Error for Error<'a> {}
 #[non_exhaustive]
 pub enum Kind {
     NameTooLong,
+    NetDisabled,
     EmptyLabel,
     EmailLocalTooLong,
     EmailTooLong,

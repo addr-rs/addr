@@ -1,9 +1,7 @@
 #[cfg(feature = "net")]
-use crate::parser::EmailAddress;
-use crate::parser::{DnsName, DomainName};
-use crate::{dns, domain};
-#[cfg(feature = "net")]
-use crate::{email, net};
+use crate::net;
+use crate::parser::{DnsName, DomainName, EmailAddress};
+use crate::{dns, domain, email};
 #[cfg(feature = "net")]
 use no_std_net as upstream;
 #[cfg(feature = "psl")]
@@ -57,7 +55,6 @@ impl<'de> Deserialize<'de> for dns::Name<'de> {
     }
 }
 
-#[cfg(feature = "net")]
 impl Serialize for email::Address<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -67,7 +64,7 @@ impl Serialize for email::Address<'_> {
     }
 }
 
-#[cfg(feature = "net")]
+#[cfg(feature = "psl")]
 impl<'de> Deserialize<'de> for email::Address<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -76,12 +73,11 @@ impl<'de> Deserialize<'de> for email::Address<'de> {
         let input = <&str>::deserialize(deserializer)?;
         List.parse_email_address(input).map_err(|_| {
             let invalid = Unexpected::Str(input);
-            Error::invalid_value(invalid, &"a DNS name")
+            Error::invalid_value(invalid, &"an email address")
         })
     }
 }
 
-#[cfg(feature = "net")]
 impl Serialize for email::Host<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -95,7 +91,6 @@ impl Serialize for email::Host<'_> {
     }
 }
 
-#[cfg(feature = "net")]
 impl<'de> Deserialize<'de> for email::Host<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

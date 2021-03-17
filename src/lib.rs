@@ -44,7 +44,6 @@
 
 pub mod dns;
 pub mod domain;
-#[cfg(feature = "net")]
 pub mod email;
 pub mod error;
 mod matcher;

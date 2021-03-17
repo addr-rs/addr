@@ -196,7 +196,7 @@ fn addr_parsing() {
                 "_somename@example.com",
             ];
             for email in emails {
-                assert!(List.parse_email_address(email).is_ok(), email);
+                assert_eq!(List.parse_email_address(email).unwrap().as_str(), email);
             }
         });
 

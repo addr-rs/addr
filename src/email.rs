@@ -3,8 +3,11 @@
 use crate::domain::Name;
 use crate::error::{Kind, Result};
 use crate::matcher;
+#[cfg(feature = "net")]
 use crate::net::IpAddr;
 use core::fmt;
+#[cfg(not(feature = "net"))]
+use core::str::FromStr;
 use psl_types::List;
 
 /// Holds information about a particular email address
@@ -54,6 +57,20 @@ impl fmt::Display for Address<'_> {
     }
 }
 
+#[cfg(not(feature = "net"))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum IpAddr {}
+
+#[cfg(not(feature = "net"))]
+impl FromStr for IpAddr {
+    type Err = Kind;
+
+    fn from_str(_: &str) -> Result<Self> {
+        unreachable!()
+    }
+}
+
 /// Information about the host part of an email address
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Host<'a> {
@@ -63,12 +80,21 @@ pub enum Host<'a> {
 
 impl<'a> Host<'a> {
     pub(crate) fn parse<T: List + ?Sized>(list: &T, host: &'a str) -> Result<Host<'a>> {
-        match host.strip_prefix('[') {
-            Some(h) => {
-                let ip_addr = h.strip_suffix(']').ok_or(Kind::IllegalCharacter)?.parse()?;
-                Ok(Host::IpAddr(ip_addr))
+        if host.starts_with('[') && host.ends_with(']') {
+            let host_len = host.len();
+            if host_len < 3 {
+                return Err(Kind::InvalidIpAddr);
             }
-            None => Ok(Host::Domain(Name::parse(list, host)?)),
+            if cfg!(not(feature = "net")) {
+                return Err(Kind::NetDisabled);
+            }
+            let ip_addr = host
+                .get(1..host_len - 1)
+                .ok_or(Kind::InvalidIpAddr)?
+                .parse()?;
+            Ok(Host::IpAddr(ip_addr))
+        } else {
+            Ok(Host::Domain(Name::parse(list, host)?))
         }
     }
 }
