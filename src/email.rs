@@ -57,9 +57,11 @@ impl fmt::Display for Address<'_> {
     }
 }
 
+// A placeholder IP address that can never be constructed
 #[cfg(not(feature = "net"))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[doc(hidden)]
 pub enum IpAddr {}
 
 #[cfg(not(feature = "net"))]
