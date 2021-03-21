@@ -1,5 +1,27 @@
 use addr::parser::*;
+#[cfg(feature = "psl")]
 use addr::psl::List;
+#[cfg(not(feature = "psl"))]
+use psl_types::Info;
+
+#[cfg(not(feature = "psl"))]
+struct List;
+
+#[cfg(not(feature = "psl"))]
+impl psl_types::List for List {
+    fn find<'a, T>(&self, mut labels: T) -> Info
+    where
+        T: Iterator<Item = &'a [u8]>,
+    {
+        match labels.next() {
+            Some(label) => Info {
+                len: label.len(),
+                typ: None,
+            },
+            None => Info { len: 0, typ: None },
+        }
+    }
+}
 
 #[test]
 fn addr_parsing() {
@@ -178,6 +200,7 @@ fn addr_parsing() {
         ctx.it("should allow valid email addresses", move |_| {
             let emails = vec![
                 "prettyandsimple@example.com",
+                "prettyandsimple@1example.com",
                 "very.common@example.com",
                 "disposable.style.email.with+symbol@example.com",
                 "other.email-with-dash@example.com",
@@ -187,6 +210,8 @@ fn addr_parsing() {
                 "example@s.solutions",
                 #[cfg(feature = "net")]
                 "user@[fd79:cdcb:38cc:9dd:f686:e06d:32f3:c123]",
+                #[cfg(feature = "net")]
+                "user@[127.0.0.1]",
                 r#""Abc\@def"@example.com"#,
                 r#""Fred Bloggs"@example.com"#,
                 r#""Joe\\Blow"@example.com"#,

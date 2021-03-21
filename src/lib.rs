@@ -7,6 +7,8 @@
 
   ```rust
   # fn main() -> Result<(), Box<dyn std::error::Error>> {
+  # #[cfg(feature = "psl")]
+  # {
   use addr::parser::{DomainName, DnsName};
   use addr::psl::List;
 
@@ -34,6 +36,7 @@
   // In any case if the domain's suffix is in the list
   // then this is definately a registrable domain name
   assert!(domain.has_known_suffix());
+  # }
   # Ok(())
   # }
   ```
