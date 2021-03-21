@@ -11,10 +11,10 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 edition = "2018"
 
 [dependencies]
-psl-types = "2.0.3"
+psl-types = "2.0.5"
 
 [dependencies.psl]
-version = "2.0.7"
+version = "2.0.8"
 optional = true
 
 # requires Rust v1.46
@@ -32,8 +32,8 @@ optional = true
 [dev-dependencies]
 criterion = "0.3.4"
 lazy_static = "1.4.0"
-psl = "2.0.7"
-publicsuffix = "2.0.9"
+psl = "2.0.8"
+publicsuffix = "2.0.10"
 rspec = "1.0.0"
 
 [[bench]]
