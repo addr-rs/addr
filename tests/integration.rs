@@ -26,23 +26,27 @@ impl psl_types::List for List {
 #[test]
 fn addr_parsing() {
     rspec::run(&rspec::given("a domain", (), |ctx| {
-        ctx.it("should allow non-fully qualified domain names", move |_| {
+        ctx.it("should allow non-fully qualified domain names", |_| {
             assert!(List.parse_domain_name("example.com").is_ok())
         });
 
-        ctx.it("should allow fully qualified domain names", move |_| {
+        ctx.it("should allow fully qualified domain names", |_| {
             assert!(List.parse_domain_name("example.com.").is_ok())
         });
 
-        ctx.it("should allow sub-domains", move |_| {
+        ctx.it("should allow sub-domains", |_| {
             assert!(List.parse_domain_name("www.example.com.").is_ok())
         });
 
-        ctx.it("should not allow more than 1 trailing dot", move |_| {
+        ctx.it("should allow IDNs", |_| {
+            assert!(List.parse_domain_name("københavn.eu").is_ok())
+        });
+
+        ctx.it("should not allow more than 1 trailing dot", |_| {
             assert!(List.parse_domain_name("example.com..").is_err());
         });
 
-        ctx.it("should allow single-label domains", move |_| {
+        ctx.it("should allow single-label domains", |_| {
             let domains = vec![
                 // real TLDs
                 "com",
@@ -69,7 +73,7 @@ fn addr_parsing() {
 
         ctx.it(
             "should not have the same result with or without the trailing dot",
-            move |_| {
+            |_| {
                 assert_ne!(
                     List.parse_domain_name("example.com.").unwrap(),
                     List.parse_domain_name("example.com").unwrap()
@@ -77,27 +81,27 @@ fn addr_parsing() {
             },
         );
 
-        ctx.it("should not have empty labels", move |_| {
+        ctx.it("should not have empty labels", |_| {
             assert!(List.parse_domain_name("exa..mple.com").is_err());
         });
 
-        ctx.it("should not contain spaces", move |_| {
+        ctx.it("should not contain spaces", |_| {
             assert!(List.parse_domain_name("exa mple.com").is_err());
         });
 
-        ctx.it("should not start with a dash", move |_| {
+        ctx.it("should not start with a dash", |_| {
             assert!(List.parse_domain_name("-example.com").is_err());
         });
 
-        ctx.it("should not end with a dash", move |_| {
+        ctx.it("should not end with a dash", |_| {
             assert!(List.parse_domain_name("example-.com").is_err());
         });
 
-        ctx.it("should not contain /", move |_| {
+        ctx.it("should not contain /", |_| {
             assert!(List.parse_domain_name("exa/mple.com").is_err());
         });
 
-        ctx.it("should not have a label > 63 characters", move |_| {
+        ctx.it("should not have a label > 63 characters", |_| {
             let mut too_long_domain = String::from("a");
             for _ in 0..64 {
                 too_long_domain.push_str("a");
@@ -106,11 +110,11 @@ fn addr_parsing() {
             assert!(List.parse_domain_name(too_long_domain.as_str()).is_err());
         });
 
-        ctx.it("should not be an IPv4 address", move |_| {
+        ctx.it("should not be an IPv4 address", |_| {
             assert!(List.parse_domain_name("127.38.53.247").is_err());
         });
 
-        ctx.it("should not be an IPv6 address", move |_| {
+        ctx.it("should not be an IPv6 address", |_| {
             assert!(List
                 .parse_domain_name("fd79:cdcb:38cc:9dd:f686:e06d:32f3:c123")
                 .is_err());
@@ -118,16 +122,16 @@ fn addr_parsing() {
 
         ctx.it(
             "should allow numbers only labels that are not the tld",
-            move |_| {
+            |_| {
                 assert!(List.parse_domain_name("127.com").is_ok());
             },
         );
 
-        ctx.it("should not allow number only tlds", move |_| {
+        ctx.it("should not allow number only tlds", |_| {
             assert!(List.parse_domain_name("example.127").is_err());
         });
 
-        ctx.it("should not have more than 127 labels", move |_| {
+        ctx.it("should not have more than 127 labels", |_| {
             let mut too_many_labels_domain = String::from("a");
             for _ in 0..126 {
                 too_many_labels_domain.push_str(".a");
@@ -138,7 +142,7 @@ fn addr_parsing() {
                 .is_err());
         });
 
-        ctx.it("should not have more than 253 characters", move |_| {
+        ctx.it("should not have more than 253 characters", |_| {
             let mut too_many_chars_domain = String::from("aaaaa");
             for _ in 0..50 {
                 too_many_chars_domain.push_str(".aaaaaa");
@@ -151,7 +155,7 @@ fn addr_parsing() {
     }));
 
     rspec::run(&rspec::given("a DNS name", (), |ctx| {
-        ctx.it("should allow extended characters", move |_| {
+        ctx.it("should allow extended characters", |_| {
             let names = vec![
                 "example.com.",
                 "_tcp.example.com.",
@@ -166,7 +170,7 @@ fn addr_parsing() {
 
         ctx.it(
             "should allow extracting the correct root and suffix where possible",
-            move |_| {
+            |_| {
                 let names = vec![
                     ("_tcp.example.com.", Some("example.com."), Some("com.")),
                     (
@@ -184,20 +188,20 @@ fn addr_parsing() {
             },
         );
 
-        ctx.it("should not require a valid root domain", move |_| {
+        ctx.it("should not require a valid root domain", |_| {
             let names = vec!["_tcp.com.", "_telnet._tcp.com.", "*.com.", "ex!mple.com."];
             for name in names {
                 assert!(List.parse_dns_name(name).is_ok());
             }
         });
 
-        ctx.it("should not allow more than 1 trailing dot", move |_| {
+        ctx.it("should not allow more than 1 trailing dot", |_| {
             assert!(List.parse_dns_name("example.com..").is_err());
         });
     }));
 
     rspec::run(&rspec::given("a parsed email", (), |ctx| {
-        ctx.it("should allow valid email addresses", move |_| {
+        ctx.it("should allow valid email addresses", |_| {
             let emails = vec![
                 "prettyandsimple@example.com",
                 "prettyandsimple@1example.com",
@@ -226,7 +230,7 @@ fn addr_parsing() {
             }
         });
 
-        ctx.it("should reject invalid email addresses", move |_| {
+        ctx.it("should reject invalid email addresses", |_| {
             let emails = vec![
                 "Abc.example.com",
                 "A@b@c@example.com",
@@ -246,7 +250,7 @@ fn addr_parsing() {
             }
         });
 
-        ctx.it("should allow parsing IDN email addresses", move |_| {
+        ctx.it("should allow parsing IDN email addresses", |_| {
             let emails = vec![
                 r#"Pelé@example.com"#,
                 r#"δοκιμή@παράδειγμα.δοκιμή"#,
