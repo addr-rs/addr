@@ -11,10 +11,10 @@ authors = ["rushmorem <rushmore@webenchanter.com>"]
 edition = "2018"
 
 [dependencies]
-psl-types = "2.0.2"
+psl-types = "2.0.3"
 
 [dependencies.psl]
-version = "2.0.6"
+version = "2.0.7"
 optional = true
 
 [dependencies.no-std-net]
@@ -31,8 +31,8 @@ optional = true
 [dev-dependencies]
 criterion = "0.3.4"
 lazy_static = "1.4.0"
-psl = "2.0.6"
-publicsuffix = "2.0.6"
+psl = "2.0.7"
+publicsuffix = "2.0.9"
 rspec = "1.0.0"
 
 [[bench]]
