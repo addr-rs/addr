@@ -1,7 +1,7 @@
 //! Network types
 //!
 //! This module only exists because `std::net` is not available in
-//! `no_std` environments
+//! `no_std` environments. It requires Rust v1.46.
 
 use crate::error::Kind;
 use core::str::FromStr;
