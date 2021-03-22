@@ -46,4 +46,4 @@ net = ["no-std-net"]
 std = []
 
 [package.metadata.docs.rs]
-features = ["default", "net", "serde"]
+all-features = true
