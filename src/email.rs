@@ -57,6 +57,12 @@ impl fmt::Display for Address<'_> {
     }
 }
 
+impl PartialEq<&str> for Address<'_> {
+    fn eq(&self, other: &&str) -> bool {
+        self.full == *other
+    }
+}
+
 // A placeholder IP address that can never be constructed
 #[cfg(not(feature = "net"))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

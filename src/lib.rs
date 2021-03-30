@@ -56,10 +56,16 @@ pub mod parser;
 #[cfg(feature = "serde")]
 mod serde;
 
-/// The default implementation of the public suffix list this crate uses
+/// The static implementation of the public suffix list
 #[cfg(feature = "psl")]
 pub mod psl {
     pub use psl::List;
+}
+
+/// The dynamic implementation of the public suffix list
+#[cfg(feature = "publicsuffix")]
+pub mod publicsuffix {
+    pub use publicsuffix::{IcannList, List, PrivateList};
 }
 
 /// Custom result type

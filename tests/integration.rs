@@ -246,7 +246,7 @@ fn addr_parsing() {
                 "@example.com",
             ];
             for email in emails {
-                assert!(List.parse_email_address(email).is_err(), email);
+                assert!(List.parse_email_address(email).is_err(), "{}", email);
             }
         });
 
@@ -264,7 +264,7 @@ fn addr_parsing() {
             ];
             for email in emails {
                 let list = List;
-                assert!(list.parse_email_address(email).is_ok(), email);
+                assert!(list.parse_email_address(email).is_ok(), "{}", email);
             }
         });
     }));

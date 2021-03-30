@@ -85,3 +85,9 @@ impl fmt::Display for Name<'_> {
         write!(f, "{}", self.full)
     }
 }
+
+impl PartialEq<&str> for Name<'_> {
+    fn eq(&self, other: &&str) -> bool {
+        self.full == *other
+    }
+}
