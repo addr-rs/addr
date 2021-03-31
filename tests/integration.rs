@@ -162,6 +162,8 @@ fn addr_parsing() {
                 "_telnet._tcp.example.com.",
                 "*.example.com.",
                 "!.example.com.",
+                "Elgato Ring Light A4EE",
+                "fc:fc:f2:a1:e1:51@fe80::ee2c:e2ff:fea1:e151",
             ];
             for name in names {
                 assert!(List.parse_dns_name(name).is_ok());
