@@ -6,11 +6,11 @@
   ## Examples
 
   ```rust
-  use addr::{parse_domain_name, parse_dns_name};
-
   # fn main() -> Result<(), Box<dyn std::error::Error>> {
   # #[cfg(feature = "psl")]
   # {
+  use addr::{parse_domain_name, parse_dns_name};
+
   // You can find out the root domain
   // or extension of any given domain name
   let domain = parse_domain_name("www.example.com")?;
@@ -66,15 +66,15 @@ pub mod psl {
 
     pub use psl::List;
 
-    pub fn parse_domain_name(input: &str) -> Result<'_, domain::Name<'_>> {
+    pub fn parse_domain_name(input: &str) -> Result<domain::Name> {
         List.parse_domain_name(input)
     }
 
-    pub fn parse_dns_name(input: &str) -> Result<'_, dns::Name<'_>> {
+    pub fn parse_dns_name(input: &str) -> Result<dns::Name> {
         List.parse_dns_name(input)
     }
 
-    pub fn parse_email_address(input: &str) -> Result<'_, email::Address<'_>> {
+    pub fn parse_email_address(input: &str) -> Result<email::Address> {
         List.parse_email_address(input)
     }
 }
