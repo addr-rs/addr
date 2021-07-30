@@ -37,7 +37,7 @@ impl<'a> Address<'a> {
 
     /// The full email address as a `str`
     pub const fn as_str(&self) -> &str {
-        &self.full
+        self.full
     }
 
     /// The host part of the email address

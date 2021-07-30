@@ -23,7 +23,7 @@ impl<'a> Name<'a> {
 
     /// Full dns name as a `str`
     pub const fn as_str(&self) -> &str {
-        &self.full
+        self.full
     }
 
     /// The root domain (the registrable part)
