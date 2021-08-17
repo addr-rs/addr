@@ -14,7 +14,7 @@ edition = "2018"
 psl-types = "2.0.7"
 
 [dependencies.psl]
-version = "2.0.40"
+version = "2.0.42"
 optional = true
 
 [dependencies.publicsuffix]
@@ -29,14 +29,14 @@ features = ["serde"]
 optional = true
 
 [dependencies.serde]
-version = "1.0.126"
+version = "1.0.127"
 default-features = false
 optional = true
 
 [dev-dependencies]
-criterion = "0.3.4"
+criterion = "0.3.5"
 lazy_static = "1.4.0"
-psl = "2.0.40"
+psl = "2.0.42"
 publicsuffix = "2.1.0"
 rspec = "1.0.0"
 
