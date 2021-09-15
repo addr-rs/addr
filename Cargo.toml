@@ -14,11 +14,11 @@ edition = "2018"
 psl-types = "2.0.7"
 
 [dependencies.psl]
-version = "2.0.42"
+version = "2.0.48"
 optional = true
 
 [dependencies.publicsuffix]
-version = "2.1.0"
+version = "2.1.1"
 optional = true
 
 # requires Rust v1.46
@@ -29,15 +29,15 @@ features = ["serde"]
 optional = true
 
 [dependencies.serde]
-version = "1.0.127"
+version = "1.0.130"
 default-features = false
 optional = true
 
 [dev-dependencies]
 criterion = "0.3.5"
 lazy_static = "1.4.0"
-psl = "2.0.42"
-publicsuffix = "2.1.0"
+psl = "2.0.48"
+publicsuffix = "2.1.1"
 rspec = "1.0.0"
 
 [[bench]]
