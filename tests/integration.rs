@@ -1,11 +1,37 @@
-use addr::parser::*;
 #[cfg(feature = "psl")]
 use addr::psl::List;
+use addr::{parse_domain_name, parser::*};
 #[cfg(not(feature = "psl"))]
 use psl_types::Info;
+#[cfg(feature = "idna")]
+use rspec::report::ExampleResult;
+#[cfg(feature = "idna")]
+use serde::Deserialize;
 
 #[cfg(not(feature = "psl"))]
 struct List;
+
+#[cfg(feature = "idna")]
+#[derive(Debug, Deserialize)]
+struct JsonSchemaTestSuite {
+    description: String,
+    schema: Format,
+    tests: Vec<Test>,
+}
+
+#[cfg(feature = "idna")]
+#[derive(Debug, Deserialize)]
+struct Format {
+    format: String,
+}
+
+#[cfg(feature = "idna")]
+#[derive(Debug, Deserialize)]
+struct Test {
+    description: String,
+    data: String,
+    valid: bool,
+}
 
 #[cfg(not(feature = "psl"))]
 impl psl_types::List for List {
@@ -154,6 +180,51 @@ fn addr_parsing() {
         });
     }));
 
+    #[cfg(all(feature = "idna", feature = "psl"))]
+    rspec::run(&rspec::given("the JSON schema test suite", (), |ctx| {
+        // The JSON schema test suite is downloaded from
+        // https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/master/tests/draft7/optional/format/idn-hostname.json
+        let suites: Vec<JsonSchemaTestSuite> =
+            serde_json::from_slice(include_bytes!("idn-hostname.json")).unwrap();
+        for suite in suites {
+            // we only care about IDNs
+            if suite.schema.format == "idn-hostname" {
+                for Test {
+                    valid,
+                    description,
+                    data,
+                } in suite.tests
+                {
+                    let label = format!(
+                        "{} {}",
+                        if valid {
+                            "validates"
+                        } else {
+                            "doesn't validate"
+                        },
+                        description
+                    );
+                    ctx.it(msg(label), move |_| {
+                        if parse_domain_name(&data).is_ok() == valid {
+                            ExampleResult::Success
+                        } else {
+                            let msg = format!(
+                                "failed the test; `{}` {}",
+                                data,
+                                if valid {
+                                    "should be valid"
+                                } else {
+                                    "shouldn't be valid"
+                                }
+                            );
+                            ExampleResult::Failure(Some(msg))
+                        }
+                    });
+                }
+            }
+        }
+    }));
+
     rspec::run(&rspec::given("a DNS name", (), |ctx| {
         ctx.it("should allow extended characters", |_| {
             let names = vec![
@@ -270,4 +341,16 @@ fn addr_parsing() {
             }
         });
     }));
+}
+
+// Converts a String to &'static str
+//
+// This will leak memory but that's OK for our testing purposes
+#[cfg(feature = "idna")]
+fn msg(s: String) -> &'static str {
+    unsafe {
+        let ret = std::mem::transmute(&s as &str);
+        std::mem::forget(s);
+        ret
+    }
 }

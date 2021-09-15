@@ -35,6 +35,10 @@ assert_eq!(name.suffix(), Some("com."));
 assert!(domain.has_known_suffix());
 ```
 
+## TODO
+
+[Strict internationalized domain names (IDN) validation](https://github.com/addr-rs/addr/issues/13) (use the `idna` feature flag)
+
 ## Use Cases
 
 For those who work with domain names the use cases of this library are plenty. [publicsuffix.org/learn](https://publicsuffix.org/learn/) lists quite a few. For the sake of brevity, I'm not going to repeat them here. I work for a domain registrar so we make good use of this library. Here are some of the ways this library can be used:

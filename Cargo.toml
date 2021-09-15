@@ -39,6 +39,8 @@ lazy_static = "1.4.0"
 psl = "2.0.48"
 publicsuffix = "2.1.1"
 rspec = "1.0.0"
+serde = { version = "1.0.130", features = ["derive"] }
+serde_json = "1.0.68"
 
 [[bench]]
 name = "list_benchmark"
@@ -46,6 +48,7 @@ harness = false
 
 [features]
 default = ["psl", "std"]
+idna = []
 net = ["no-std-net"]
 std = []
 
