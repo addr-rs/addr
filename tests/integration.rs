@@ -1,6 +1,8 @@
 #[cfg(feature = "psl")]
+use addr::parse_domain_name;
+use addr::parser::*;
+#[cfg(feature = "psl")]
 use addr::psl::List;
-use addr::{parse_domain_name, parser::*};
 #[cfg(not(feature = "psl"))]
 use psl_types::Info;
 #[cfg(feature = "idna")]
@@ -252,6 +254,7 @@ fn addr_parsing() {
                         Some("com."),
                     ),
                     ("example.com", Some("example.com"), Some("com")),
+                    ("example.com.com", Some("com.com"), Some("com")),
                 ];
                 for (input, root, suffix) in names {
                     let name = List.parse_dns_name(input).unwrap();

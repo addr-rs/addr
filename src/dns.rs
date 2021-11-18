@@ -33,14 +33,12 @@ impl<'a> Name<'a> {
     }
 
     fn prefix(&self) -> Option<&str> {
-        let prefix = self
-            .full
-            .trim_end_matches(self.suffix()?)
-            .trim_end_matches('.');
-        if prefix.is_empty() {
+        let domain_len = self.full.len();
+        let suffix_len = self.suffix()?.len();
+        if domain_len == suffix_len {
             return None;
         }
-        Some(prefix)
+        self.full.get(..domain_len - suffix_len - 1)
     }
 
     /// The domain name suffix (extension)
