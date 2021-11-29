@@ -51,6 +51,3 @@ default = ["psl", "std"]
 idna = []
 net = ["no-std-net"]
 std = []
-
-[package.metadata.docs.rs]
-all-features = true
