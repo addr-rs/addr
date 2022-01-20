@@ -41,6 +41,15 @@ impl<'a> Name<'a> {
         self.full.get(offset..)
     }
 
+    pub fn sub_domain(&self) -> Option<&str> {
+        let domain_len = self.full.len();
+        let root_len = self.root()?.len();
+        if domain_len == root_len {
+            return None;
+        }
+        self.full.get(..domain_len - root_len - 1)
+    }
+
     fn prefix(&self) -> Option<&str> {
         let domain_len = self.full.len();
         let suffix_len = self.suffix().len();
