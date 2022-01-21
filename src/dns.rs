@@ -26,19 +26,33 @@ impl<'a> Name<'a> {
         self.full
     }
 
-    /// The root domain (the registrable part)
-    pub fn root(&self) -> Option<&str> {
-        let offset = self.prefix()?.rfind('.').map(|x| x + 1).unwrap_or_default();
-        self.full.get(offset..)
-    }
-
-    fn prefix(&self) -> Option<&str> {
+    fn without_suffix(&self) -> Option<&str> {
         let domain_len = self.full.len();
         let suffix_len = self.suffix()?.len();
         if domain_len == suffix_len {
             return None;
         }
         self.full.get(..domain_len - suffix_len - 1)
+    }
+
+    /// The root domain (the registrable part)
+    pub fn root(&self) -> Option<&str> {
+        let offset = self
+            .without_suffix()?
+            .rfind('.')
+            .map(|x| x + 1)
+            .unwrap_or_default();
+        self.full.get(offset..)
+    }
+
+    /// The part before the root domain (aka. subdomain)
+    pub fn prefix(&self) -> Option<&str> {
+        let domain_len = self.full.len();
+        let root_len = self.root()?.len();
+        if domain_len == root_len {
+            return None;
+        }
+        self.full.get(..domain_len - root_len - 1)
     }
 
     /// The domain name suffix (extension)
