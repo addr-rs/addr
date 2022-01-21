@@ -23,8 +23,7 @@ optional = true
 
 # requires Rust v1.46
 [dependencies.no-std-net]
-git = "https://github.com/rushmorem/no-std-net"
-branch = "issue-15"
+version = "0.6.0"
 default-features = false
 features = ["serde"]
 optional = true
