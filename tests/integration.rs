@@ -1,5 +1,3 @@
-#[cfg(feature = "psl")]
-use addr::parse_domain_name;
 use addr::parser::*;
 #[cfg(feature = "psl")]
 use addr::psl::List;
