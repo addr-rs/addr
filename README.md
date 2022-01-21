@@ -14,6 +14,7 @@ use addr::{parse_domain_name, parse_dns_name};
 let domain = parse_domain_name("www.example.com")?;
 assert_eq!(domain.root(), Some("example.com"));
 assert_eq!(domain.suffix(), "com");
+assert_eq!(domain.prefix(), Some("www"));
 
 let domain = parse_domain_name("www.食狮.中国")?;
 assert_eq!(domain.root(), Some("食狮.中国"));

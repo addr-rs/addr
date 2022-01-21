@@ -61,7 +61,10 @@ fn addr_parsing() {
         });
 
         ctx.it("should allow sub-domains", |_| {
-            assert!(List.parse_domain_name("www.example.com.").is_ok())
+            let domain = List.parse_domain_name("www.example.com.").unwrap();
+            assert_eq!(domain.suffix(), "com.");
+            assert_eq!(domain.root(), Some("example.com."));
+            assert_eq!(domain.prefix(), Some("www"));
         });
 
         ctx.it("should allow IDNs", |_| {
