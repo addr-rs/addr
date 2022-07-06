@@ -18,7 +18,7 @@ impl<'a> Error<'a> {
     }
 
     /// The input that resulted in this error
-    pub const fn input(&self) -> &str {
+    pub const fn input(&self) -> &'a str {
         self.input
     }
 }

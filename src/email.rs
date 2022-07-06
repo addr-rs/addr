@@ -36,7 +36,7 @@ impl<'a> Address<'a> {
     }
 
     /// The full email address as a `str`
-    pub const fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &'a str {
         self.full
     }
 
@@ -46,7 +46,7 @@ impl<'a> Address<'a> {
     }
 
     /// The user (local) part of the email address
-    pub fn user(&self) -> &str {
+    pub fn user(&self) -> &'a str {
         &self.full[..self.at_sign]
     }
 }

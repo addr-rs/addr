@@ -181,6 +181,12 @@ fn addr_parsing() {
                 .parse_domain_name(too_many_chars_domain.as_str())
                 .is_err());
         });
+
+        ctx.it("should handle lifetimes correctly", |_| {
+            let input = "sub.example.com";
+            let root_domain = List.parse_domain_name(input).unwrap().root().unwrap();
+            assert_eq!(root_domain, "example.com");
+        });
     }));
 
     #[cfg(all(feature = "idna", feature = "psl"))]

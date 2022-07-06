@@ -31,11 +31,11 @@ impl<'a> Name<'a> {
     }
 
     /// Full domain name as a `str`
-    pub const fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &'a str {
         self.full
     }
 
-    fn without_suffix(&self) -> Option<&str> {
+    fn without_suffix(&self) -> Option<&'a str> {
         let domain_len = self.full.len();
         let suffix_len = self.suffix().len();
         if domain_len == suffix_len {
@@ -45,7 +45,7 @@ impl<'a> Name<'a> {
     }
 
     /// The root domain (the registrable part)
-    pub fn root(&self) -> Option<&str> {
+    pub fn root(&self) -> Option<&'a str> {
         let offset = self
             .without_suffix()?
             .rfind('.')
@@ -55,7 +55,7 @@ impl<'a> Name<'a> {
     }
 
     /// The part before the root domain (aka. subdomain)
-    pub fn prefix(&self) -> Option<&str> {
+    pub fn prefix(&self) -> Option<&'a str> {
         let domain_len = self.full.len();
         let root_len = self.root()?.len();
         if domain_len == root_len {
@@ -65,7 +65,7 @@ impl<'a> Name<'a> {
     }
 
     /// The domain name suffix (extension)
-    pub fn suffix(&self) -> &str {
+    pub fn suffix(&self) -> &'a str {
         let offset = self.full.len() - self.suffix.as_bytes().len();
         &self.full[offset..]
     }
