@@ -94,3 +94,10 @@ impl Kind {
         Error { kind: self, input }
     }
 }
+
+#[cfg(feature = "std")]
+impl From<std::net::AddrParseError> for Kind {
+    fn from(_: std::net::AddrParseError) -> Self {
+        Self::InvalidIpAddr
+    }
+}

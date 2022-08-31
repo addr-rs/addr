@@ -4,11 +4,14 @@ use crate::domain::Name;
 use crate::error::{Kind, Result};
 use crate::matcher;
 #[cfg(feature = "net")]
+#[cfg(not(feature = "std"))]
 use crate::net::IpAddr;
 use core::fmt;
-#[cfg(not(feature = "net"))]
+#[cfg(not(any(feature = "net", feature = "std")))]
 use core::str::FromStr;
 use psl_types::List;
+#[cfg(feature = "std")]
+use std::net::IpAddr;
 
 /// Holds information about a particular email address
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -64,13 +67,13 @@ impl PartialEq<&str> for Address<'_> {
 }
 
 // A placeholder IP address that can never be constructed
-#[cfg(not(feature = "net"))]
+#[cfg(not(any(feature = "net", feature = "std")))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[doc(hidden)]
 pub enum IpAddr {}
 
-#[cfg(not(feature = "net"))]
+#[cfg(not(any(feature = "net", feature = "std")))]
 impl FromStr for IpAddr {
     type Err = Kind;
 
@@ -93,7 +96,7 @@ impl<'a> Host<'a> {
             if host_len < 3 {
                 return Err(Kind::InvalidIpAddr);
             }
-            if cfg!(not(feature = "net")) {
+            if cfg!(not(any(feature = "net", feature = "std"))) {
                 return Err(Kind::NetDisabled);
             }
             let ip_addr = host

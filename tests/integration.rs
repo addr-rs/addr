@@ -265,9 +265,9 @@ fn addr_parsing() {
                 "example-indeed@strange-example.com",
                 "#!$%&'*+-/=?^_`{}|~@example.org",
                 "example@s.solutions",
-                #[cfg(feature = "net")]
+                #[cfg(any(feature = "net", feature = "std"))]
                 "user@[fd79:cdcb:38cc:9dd:f686:e06d:32f3:c123]",
-                #[cfg(feature = "net")]
+                #[cfg(any(feature = "net", feature = "std"))]
                 "user@[127.0.0.1]",
                 r#""Abc\@def"@example.com"#,
                 r#""Fred Bloggs"@example.com"#,
