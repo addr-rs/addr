@@ -55,6 +55,8 @@ pub mod parser;
 #[cfg(feature = "serde")]
 mod serde;
 
+#[cfg(not(any(feature = "psl", feature = "publicsuffix")))]
+pub use crate::empty_psl::{parse_dns_name, parse_domain_name, parse_email_address};
 #[cfg(feature = "psl")]
 pub use crate::psl::{parse_dns_name, parse_domain_name, parse_email_address};
 
@@ -65,6 +67,42 @@ pub mod psl {
     use crate::{dns, domain, email, Result};
 
     pub use psl::List;
+
+    pub fn parse_domain_name(input: &str) -> Result<domain::Name> {
+        List.parse_domain_name(input)
+    }
+
+    pub fn parse_dns_name(input: &str) -> Result<dns::Name> {
+        List.parse_dns_name(input)
+    }
+
+    pub fn parse_email_address(input: &str) -> Result<email::Address> {
+        List.parse_email_address(input)
+    }
+}
+
+#[cfg(not(any(feature = "psl", feature = "publicsuffix")))]
+mod empty_psl {
+    use crate::parser::{DnsName, DomainName, EmailAddress};
+    use crate::{dns, domain, email, Result};
+    use psl_types::Info;
+
+    pub struct List;
+
+    impl psl_types::List for List {
+        fn find<'a, T>(&self, mut labels: T) -> Info
+        where
+            T: Iterator<Item = &'a [u8]>,
+        {
+            match labels.next() {
+                Some(label) => Info {
+                    len: label.len(),
+                    typ: None,
+                },
+                None => Info { len: 0, typ: None },
+            }
+        }
+    }
 
     pub fn parse_domain_name(input: &str) -> Result<domain::Name> {
         List.parse_domain_name(input)

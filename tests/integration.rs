@@ -1,15 +1,7 @@
-use addr::parser::*;
-#[cfg(feature = "psl")]
-use addr::psl::List;
-#[cfg(not(feature = "psl"))]
-use psl_types::Info;
 #[cfg(feature = "idna")]
 use rspec::report::ExampleResult;
 #[cfg(feature = "idna")]
 use serde::Deserialize;
-
-#[cfg(not(feature = "psl"))]
-struct List;
 
 #[cfg(feature = "idna")]
 #[derive(Debug, Deserialize)]
@@ -33,46 +25,30 @@ struct Test {
     valid: bool,
 }
 
-#[cfg(not(feature = "psl"))]
-impl psl_types::List for List {
-    fn find<'a, T>(&self, mut labels: T) -> Info
-    where
-        T: Iterator<Item = &'a [u8]>,
-    {
-        match labels.next() {
-            Some(label) => Info {
-                len: label.len(),
-                typ: None,
-            },
-            None => Info { len: 0, typ: None },
-        }
-    }
-}
-
 #[test]
 fn addr_parsing() {
     rspec::run(&rspec::given("a domain", (), |ctx| {
         ctx.it("should allow non-fully qualified domain names", |_| {
-            assert!(List.parse_domain_name("example.com").is_ok())
+            assert!(addr::parse_domain_name("example.com").is_ok())
         });
 
         ctx.it("should allow fully qualified domain names", |_| {
-            assert!(List.parse_domain_name("example.com.").is_ok())
+            assert!(addr::parse_domain_name("example.com.").is_ok())
         });
 
         ctx.it("should allow sub-domains", |_| {
-            let domain = List.parse_domain_name("www.example.com.").unwrap();
+            let domain = addr::parse_domain_name("www.example.com.").unwrap();
             assert_eq!(domain.suffix(), "com.");
             assert_eq!(domain.root(), Some("example.com."));
             assert_eq!(domain.prefix(), Some("www"));
         });
 
         ctx.it("should allow IDNs", |_| {
-            assert!(List.parse_domain_name("københavn.eu").is_ok())
+            assert!(addr::parse_domain_name("københavn.eu").is_ok())
         });
 
         ctx.it("should not allow more than 1 trailing dot", |_| {
-            assert!(List.parse_domain_name("example.com..").is_err());
+            assert!(addr::parse_domain_name("example.com..").is_err());
         });
 
         ctx.it("should allow single-label domains", |_| {
@@ -90,11 +66,11 @@ fn addr_parsing() {
                 "❤",
             ];
             for domain in domains {
-                let name = List.parse_domain_name(domain).unwrap();
+                let name = addr::parse_domain_name(domain).unwrap();
                 assert_eq!(name.root(), None);
                 assert_eq!(name.suffix(), domain);
 
-                let name = List.parse_dns_name(domain).unwrap();
+                let name = addr::parse_dns_name(domain).unwrap();
                 assert_eq!(name.root(), None);
                 assert_eq!(name.suffix(), Some(domain));
             }
@@ -104,30 +80,30 @@ fn addr_parsing() {
             "should not have the same result with or without the trailing dot",
             |_| {
                 assert_ne!(
-                    List.parse_domain_name("example.com.").unwrap(),
-                    List.parse_domain_name("example.com").unwrap()
+                    addr::parse_domain_name("example.com.").unwrap(),
+                    addr::parse_domain_name("example.com").unwrap()
                 );
             },
         );
 
         ctx.it("should not have empty labels", |_| {
-            assert!(List.parse_domain_name("exa..mple.com").is_err());
+            assert!(addr::parse_domain_name("exa..mple.com").is_err());
         });
 
         ctx.it("should not contain spaces", |_| {
-            assert!(List.parse_domain_name("exa mple.com").is_err());
+            assert!(addr::parse_domain_name("exa mple.com").is_err());
         });
 
         ctx.it("should not start with a dash", |_| {
-            assert!(List.parse_domain_name("-example.com").is_err());
+            assert!(addr::parse_domain_name("-example.com").is_err());
         });
 
         ctx.it("should not end with a dash", |_| {
-            assert!(List.parse_domain_name("example-.com").is_err());
+            assert!(addr::parse_domain_name("example-.com").is_err());
         });
 
         ctx.it("should not contain /", |_| {
-            assert!(List.parse_domain_name("exa/mple.com").is_err());
+            assert!(addr::parse_domain_name("exa/mple.com").is_err());
         });
 
         ctx.it("should not have a label > 63 characters", |_| {
@@ -136,28 +112,26 @@ fn addr_parsing() {
                 too_long_domain.push_str("a");
             }
             too_long_domain.push_str(".com");
-            assert!(List.parse_domain_name(too_long_domain.as_str()).is_err());
+            assert!(addr::parse_domain_name(too_long_domain.as_str()).is_err());
         });
 
         ctx.it("should not be an IPv4 address", |_| {
-            assert!(List.parse_domain_name("127.38.53.247").is_err());
+            assert!(addr::parse_domain_name("127.38.53.247").is_err());
         });
 
         ctx.it("should not be an IPv6 address", |_| {
-            assert!(List
-                .parse_domain_name("fd79:cdcb:38cc:9dd:f686:e06d:32f3:c123")
-                .is_err());
+            assert!(addr::parse_domain_name("fd79:cdcb:38cc:9dd:f686:e06d:32f3:c123").is_err());
         });
 
         ctx.it(
             "should allow numbers only labels that are not the tld",
             |_| {
-                assert!(List.parse_domain_name("127.com").is_ok());
+                assert!(addr::parse_domain_name("127.com").is_ok());
             },
         );
 
         ctx.it("should not allow number only tlds", |_| {
-            assert!(List.parse_domain_name("example.127").is_err());
+            assert!(addr::parse_domain_name("example.127").is_err());
         });
 
         ctx.it("should not have more than 127 labels", |_| {
@@ -166,9 +140,7 @@ fn addr_parsing() {
                 too_many_labels_domain.push_str(".a");
             }
             too_many_labels_domain.push_str(".com");
-            assert!(List
-                .parse_domain_name(too_many_labels_domain.as_str())
-                .is_err());
+            assert!(addr::parse_domain_name(too_many_labels_domain.as_str()).is_err());
         });
 
         ctx.it("should not have more than 253 characters", |_| {
@@ -177,14 +149,12 @@ fn addr_parsing() {
                 too_many_chars_domain.push_str(".aaaaaa");
             }
             too_many_chars_domain.push_str(".com");
-            assert!(List
-                .parse_domain_name(too_many_chars_domain.as_str())
-                .is_err());
+            assert!(addr::parse_domain_name(too_many_chars_domain.as_str()).is_err());
         });
 
         ctx.it("should handle lifetimes correctly", |_| {
             let input = "sub.example.com";
-            let root_domain = List.parse_domain_name(input).unwrap().root().unwrap();
+            let root_domain = addr::parse_domain_name(input).unwrap().root().unwrap();
             assert_eq!(root_domain, "example.com");
         });
     }));
@@ -246,7 +216,7 @@ fn addr_parsing() {
                 "fc:fc:f2:a1:e1:51@fe80::ee2c:e2ff:fea1:e151",
             ];
             for name in names {
-                assert!(List.parse_dns_name(name).is_ok());
+                assert!(addr::parse_dns_name(name).is_ok());
             }
         });
 
@@ -264,7 +234,7 @@ fn addr_parsing() {
                     ("example.com.com", Some("com.com"), Some("com")),
                 ];
                 for (input, root, suffix) in names {
-                    let name = List.parse_dns_name(input).unwrap();
+                    let name = addr::parse_dns_name(input).unwrap();
                     assert_eq!(name.root(), root);
                     assert_eq!(name.suffix(), suffix);
                 }
@@ -274,12 +244,12 @@ fn addr_parsing() {
         ctx.it("should not require a valid root domain", |_| {
             let names = vec!["_tcp.com.", "_telnet._tcp.com.", "*.com.", "ex!mple.com."];
             for name in names {
-                assert!(List.parse_dns_name(name).is_ok());
+                assert!(addr::parse_dns_name(name).is_ok());
             }
         });
 
         ctx.it("should not allow more than 1 trailing dot", |_| {
-            assert!(List.parse_dns_name("example.com..").is_err());
+            assert!(addr::parse_dns_name("example.com..").is_err());
         });
     }));
 
@@ -309,7 +279,7 @@ fn addr_parsing() {
                 "_somename@example.com",
             ];
             for email in emails {
-                assert_eq!(List.parse_email_address(email).unwrap().as_str(), email);
+                assert_eq!(addr::parse_email_address(email).unwrap().as_str(), email);
             }
         });
 
@@ -329,7 +299,7 @@ fn addr_parsing() {
                 "@example.com",
             ];
             for email in emails {
-                assert!(List.parse_email_address(email).is_err(), "{}", email);
+                assert!(addr::parse_email_address(email).is_err(), "{}", email);
             }
         });
 
@@ -346,8 +316,7 @@ fn addr_parsing() {
                 r#"用户@例子.广告"#,
             ];
             for email in emails {
-                let list = List;
-                assert!(list.parse_email_address(email).is_ok(), "{}", email);
+                assert!(addr::parse_email_address(email).is_ok(), "{}", email);
             }
         });
     }));
